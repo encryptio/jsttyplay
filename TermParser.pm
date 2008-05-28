@@ -5,6 +5,8 @@ use warnings;
 use Carp;
 use Storable qw/ dclone /;
 
+sub ASSERTIONS_ENABLED { 0 }
+
 # attribute indexes
 sub FCOLOR  () { 0 }
 sub BCOLOR  () { 1 }
@@ -19,26 +21,13 @@ sub new {
     my $width  = exists $args{'width'}  ? $args{'width'}  : 80;
     my $height = exists $args{'height'} ? $args{'height'} : 24;
 
-    $self->{'assertions_enabled'} = 0;
-
     $self->{'width'} = $width;
     $self->{'height'} = $height;
-
-    $self->{'extra_chars'} = '';
+    $self->{'extra_chars'} = ''; # buffer for incomplete escape codes
 
     $self->reset;
 
     return $self;
-}
-
-sub clear {
-    my ($self) = @_;
-    for my $y ( 0 .. $self->height-1 ) {
-        for my $x ( 0 .. $self->width-1 ) {
-            $self->data->[$y]->[$x] = ' ';
-            $self->attr->[$y]->[$x] = $self->defaultattr;
-        }
-    }
 }
 
 sub reset {
@@ -99,6 +88,16 @@ sub softreset {
     return $self;
 }
 
+sub clear {
+    my ($self) = @_;
+    for my $y ( 0 .. $self->height-1 ) {
+        for my $x ( 0 .. $self->width-1 ) {
+            $self->data->[$y]->[$x] = ' ';
+            $self->attr->[$y]->[$x] = $self->defaultattr;
+        }
+    }
+}
+
 sub switch_to_screen {
     my ($self, $index) = @_;
     die if $index < 0 or $index > $#{$self->{'buffers'}};
@@ -109,60 +108,81 @@ sub switch_to_screen {
 
 sub dowrap {
     my ($self) = @_;
+
     if ( $self->wrapnext ) {
         $self->curposx = 1;
+    
         if ( $self->curposy == $self->regionhi ) {
             $self->scroll(1);
         } else {
             $self->curposy++;
         }
+        
         $self->wrapnext = 0;
     }
 }
 
 sub parse {
     my ($self, $string) = @_;
+
+    # take our extra incomplete escape codes first
     $string = $self->{'extra_chars'} . $string;
+    
     pos($string) = 0;
     while ( pos($string) != length($string) ) {
         if ( $string =~ /\G\033([-#()*+.\/].)/gc ) { # character set sequence (SCS)
             $self->parse_escape($1);
+
         } elsif ( $string =~ /\G\033(\].*?)\007/gc ) {
             $self->parse_escape($1);
+
         } elsif ( $string =~ /\G\033(\[.*?[a-zA-Z<>])/gc ) {
             $self->parse_escape($1);
+
         } elsif ( $string =~ /\G\033([^\[\]#()])/gc ) {
             $self->parse_escape($1);
+
         } elsif ( $string =~ /\G([^\033])/gcs ) {
             $self->parse_char($1);
+
         } else { last }
     }
+
+    # save the incomplete escape codes for the next parse
     $self->{'extra_chars'} = substr $string, pos $string;
+
     return $self;
 }
 
 sub parse_escape {
     my ($self, $escape) = @_;
+
     if ( $escape =~ /^\[([0-9;]*)m$/ ) {
         $self->set_color($1);
+
     } elsif ( $escape =~ /^\]2;(.*)$/ ) {
         $self->title = $1; # window title
+
     } elsif ( $escape =~ /^\]1;(.*)$/ ) {
         # icon title
+
     } elsif ( $escape =~ /^\]0;(.*)$/ ) {
         $self->title = $1; # window and icon title
+
     } elsif ( $escape =~ /^\[(\??)(.+)h$/ ) {
         # set mode
         my ($q, $c) = ($1, $2);
         my @codes = map "$q$_", split /;/, $c;
         local $_;
         $self->set_mode($_) for @codes;
+
     } elsif ( $escape =~ /^\[(\??)(.+)l$/ ) {
         # reset mode
         my ($q, $c) = ($1, $2);
         my @codes = map "$q$_", split /;/, $c;
         local $_;
         $self->reset_mode($_) for @codes;
+
     } elsif ( 0
             or $escape eq "c"    # device attributes
             or $escape eq "0c"   # device attributes
@@ -175,12 +195,14 @@ sub parse_escape {
             or $escape eq ")"
       ) {
         # ignore
+
     } elsif ( $escape eq "7" ) {
         # save cursor and attribute
         push @{$self->cursorstack}, {
             posx => $self->curposx,
             posy => $self->curposy,
         };
+
     } elsif ( $escape eq "8" ) {
         # restore cursor and attribute
         my $state = pop @{$self->cursorstack};
@@ -189,6 +211,7 @@ sub parse_escape {
             $self->curposy = $state->{'posy'};
         }
         $self->wrapnext = 0;
+
     } elsif ( $escape =~ /^\[(\d+);(\d+)r$/ ) {
         # set margins
         my ($lo,$hi) = ($1,$2);
@@ -196,15 +219,18 @@ sub parse_escape {
         $hi = $self->height if $hi > $self->height;
         $self->regionlow = $lo;
         $self->regionhi  = $hi;
+
     } elsif ( $escape eq "[r" ) {
         # reset margins
         $self->regionlow = 1;
         $self->regionhi  = $self->height;
+
     } elsif ( $escape eq "[H" or $escape eq "[f" ) {
         # cursor home
         $self->curposx = 1;
         $self->curposy = 1;
         $self->wrapnext = 0;
+
     } elsif ( $escape =~ /^\[(\d+);(\d+)[Hf]$/ ) {
         # cursor set position
         my ($y,$x) = ($1,$2);
@@ -213,6 +239,7 @@ sub parse_escape {
         $self->curposx = $x;
         $self->curposy = $y;
         $self->wrapnext = 0;
+
     } elsif ( $escape eq "[K" or $escape eq "[0K" ) {
         # erase from cursor to end of line
         my $row = $self->data->[$self->curposy-1];
@@ -221,6 +248,7 @@ sub parse_escape {
             $row->[$x-1] = ' ';
             $arow->[$x-1] = $self->defaultattr;
         }
+
     } elsif ( $escape eq "[1K" ) {
         # erase from start of line to cursor
         my $row = $self->data->[$self->curposy-1];
@@ -229,12 +257,14 @@ sub parse_escape {
             $row->[$x-1] = ' ';
             $arow->[$x-1] = $self->defaultattr;
         }
+
     } elsif ( $escape eq "[2K" ) {
         # erase line
         my $row = $self->data->[$self->curposy-1];
         @$row = map ' ', @$row;
         my $arow = $self->attr->[$self->curposy-1];
         @$arow = map { +$self->defaultattr } @$arow;
+
     } elsif ( $escape =~ /^\[(\d+)M$/ ) {
         # delete lines
         my $erase = $1;
@@ -246,6 +276,7 @@ sub parse_escape {
             splice @{$self->data}, $self->curposy-1,         $erase;
             splice @{$self->data}, $self->regionhi-$erase, 0, map [ (' ') x $self->width ], 1 .. $erase;
         }
+
     } elsif ( $escape =~ /^\[(\d+)L$/ ) {
         # insert lines
         my $insert = $1;
@@ -256,6 +287,7 @@ sub parse_escape {
             splice @{$self->data}, $self->curposy-1, 0, map [ (' ') x $self->width ], 1 .. $insert;
             splice @{$self->data}, $self->regionhi-$insert, $insert;
         }
+
     } elsif ( $escape =~ /^\[(\d+)P$/ ) {
         # delete characters
         my $del = $1;
@@ -265,42 +297,51 @@ sub parse_escape {
         push @$row, (' ') x $del;
         splice @$arow, $self->curposx-1, $del;
         push @$arow, map {+ dclone($arow->[-1]) } 1 .. $del;
+
     } elsif ( $escape eq "[2J" ) {
         # erase display
         $self->clear;
+
     } elsif ( $escape eq "[g" or $escape eq "[0g" ) {
         # tab clear at cursor position
         $self->tabs = [ grep { $_ != $self->curposx } $self->tabs ];
+
     } elsif ( $escape eq "[3g" ) {
         # clear all tabs
         $self->tabs = [];
+
     } elsif ( $escape eq "H" ) {
         # set tab stop at cursor position
         $self->tabs = [ sort { $a <=> $b } keys %{{ map +($_,1), @{$self->tabs}, $self->curposx }} ];
+
     } elsif ( $escape =~ /^\[(\d*)A$/ ) {
         # cursor up
         my $n = $1;
         $n = 1 unless length $n;
         $self->curposy -= $n;
         $self->curposy = 1 if $self->curposy < 1;
+
     } elsif ( $escape =~ /^\[(\d*)B$/ ) {
         # cursor down
         my $n = $1;
         $n = 1 unless length $n;
         $self->curposy += $n;
         $self->curposy = $self->height if $self->curposy > $self->height;
+
     } elsif ( $escape =~ /^\[(\d*)C$/ ) {
         # cursor forward
         my $n = $1;
         $n = 1 unless length $n;
         $self->curposx += $n;
         $self->curposx = $self->width if $self->curposx > $self->width;
+
     } elsif ( $escape =~ /^\[(\d*)D$/ ) {
         # cursor backward
         my $n = $1;
         $n = 1 unless length $n;
         $self->curposx -= $n;
         $self->curposx = 1 if $self->curposx < 1;
+
     } elsif ( $escape eq "D" ) {
         # index
         $self->dowrap;
@@ -309,6 +350,7 @@ sub parse_escape {
             $self->curposy--;
             $self->scroll(1);
         }
+
     } elsif ( $escape eq "M" ) {
         # reverse index
         $self->dowrap;
@@ -317,20 +359,25 @@ sub parse_escape {
             $self->curposy++;
             $self->scroll(-1);
         }
+
     } elsif ( $escape eq "[!p" ) {
         # soft terminal reset
         $self->softreset;
+
     } elsif ( $escape eq "c" ) {
         # hard terminal reset
         $self->reset;
+
     } else {
         die "unknown escape: '$escape' (".unpack("H*",$escape).")";
     }
+
     $self->assert;
 }
 
 sub set_mode {
     my ($self, $mode) = @_;
+
     if ( $mode eq "8"  # auto repeat
       or $mode eq "9"  # interlacing
       or $mode eq "0"  # newline mode or error
@@ -342,25 +389,33 @@ sub set_mode {
       or $mode eq "6"  # ???
       ) {
         # ignore
+
     } elsif ( $mode eq "?7" ) {
         $self->autowrap = 1;
+
     } elsif ( $mode eq "?6" ) {
         $self->originmode = 1;
         die "origin mode not supported";
+
     } elsif ( $mode eq "20" ) {
         $self->linefeedback = 1;
+
     } elsif ( $mode eq "4" ) {
         $self->insertmode = 1;
+
     } elsif ( $mode eq "?47" ) {
         $self->switch_to_screen(0); # primary
+
     } else {
         die "unknown mode '$mode'";
     }
+
     $self->assert;
 }
 
 sub reset_mode {
     my ($self, $mode) = @_;
+
     if ( $mode eq "8"  # auto repeat
       or $mode eq "9"  # interlacing
       or $mode eq "0"  # newline mode or error
@@ -372,37 +427,50 @@ sub reset_mode {
       or $mode eq "6"  # ???
       ) {
         # ignore
+
     } elsif ( $mode eq "?7" ) {
-        die "autowrap unset";
         $self->autowrap = 0;
+
     } elsif ( $mode eq "?6" ) {
         $self->originmode = 0;
+
     } elsif ( $mode eq "20" ) {
         $self->linefeedback = 0;
+
     } elsif ( $mode eq "4" ) {
         $self->insertmode = 0;
+
     } elsif ( $mode eq "?47" ) {
         $self->switch_to_screen(1); # secondary
+
     } else {
         die "unknown mode '$mode'";
     }
+
     $self->assert;
 }
 
 sub set_color {
     my ($self, $colorstring) = @_;
+
     my $rev = $self->cursorattr->[REVERSE];
+
     for my $m ( length $colorstring ? split /;/, $colorstring : '' ) {
         if ( not length $m or $m == 0 ) {
             @{$self->cursorattr} = @{$self->defaultattr};
+
         } elsif ( $m == 1 ) {
             $self->cursorattr->[BOLD] = 1;
+
         } elsif ( $m == 4 ) {
             $self->cursorattr->[ULINE] = 1;
+
         } elsif ( $m >= 30 and $m <= 37 ) {
             $self->cursorattr->[$rev ? BCOLOR : FCOLOR] = $m-30;
+
         } elsif ( $m >= 40 and $m <= 47 ) {
             $self->cursorattr->[$rev ? FCOLOR : BCOLOR] = $m-40;
+
         } elsif ( $m == 7 ) {
             if ( ! $self->cursorattr->[REVERSE] ) {
                 my $fg = $self->cursorattr->[FCOLOR];
@@ -411,10 +479,13 @@ sub set_color {
                 $self->cursorattr->[FCOLOR] = $bg;
             }
             $rev = $self->cursorattr->[REVERSE] = 1;
+
         } elsif ( $m == 22 ) {
             $self->cursorattr->[BOLD] = 0;
+
         } elsif ( $m == 24 ) {
             $self->cursorattr->[ULINE] = 0;
+
         } elsif ( $m == 27 ) {
             if ( $self->cursorattr->[REVERSE] ) {
                 my $fg = $self->cursorattr->[FCOLOR];
@@ -423,6 +494,7 @@ sub set_color {
                 $self->cursorattr->[FCOLOR] = $bg;
             }
             $rev = $self->cursorattr->[REVERSE] = 0;
+
         } else {
             die "unknown color mode $m";
         }
@@ -434,6 +506,7 @@ sub parse_char {
     if ( $char eq "\015" ) { # carriage return
         $self->curposx = 1;
         $self->wrapnext = 0;
+
     } elsif ( $char eq "\012" ) { # line feed
         $self->curposx = 1 if $self->linefeedback;
         $self->curposy++;
@@ -442,6 +515,7 @@ sub parse_char {
             $self->curposy = $self->regionhi;
             $self->scroll(1);
         }
+
     } elsif ( $char eq "\011" ) { # tab
         my $to = $self->tabpositionfrom($self->curposx);
         while ( $self->curposx != $to ) {
@@ -449,15 +523,16 @@ sub parse_char {
             $self->attr->[$self->curposy-1]->[$self->curposx-1] = dclone $self->cursorattr;
             $self->curposx++;
         }
+
     } elsif ( $char eq "\010" ) { # backspace
         $self->curposx--;
         if ( $self->curposx == 0 ) {
             $self->curposx = 1;
         }
+
     } elsif ( $char =~ /[[:print:]]/ or ord $char > 127 ) {
-        if ( $self->wrapnext ) {
-            $self->dowrap;
-        }
+        $self->dowrap if $self->wrapnext;
+
         if ( $self->insertmode ) {
             splice @{$self->data->[$self->curposy-1]}, $self->curposx-1, 0, $char;
             pop @{$self->data->[$self->curposy-1]};
@@ -467,56 +542,53 @@ sub parse_char {
             $self->data->[$self->curposy-1]->[$self->curposx-1] = $char;
             $self->attr->[$self->curposy-1]->[$self->curposx-1] = dclone $self->cursorattr;
         }
+
         my $pos = $self->curpos;
         $pos->[0]++;
         if ( $pos->[0] > $self->width ) {
             $pos->[0] = $self->width;
-            $self->wrapnext = 1;
-            if ( 0 ) {
-                if ( $self->autowrap ) {
-                    $pos->[0] = 1;
-                    $pos->[1]++;
-                    if ( $pos->[1] > $self->regionhi ) {
-                        $pos->[1] = $self->regionhi;
-                        $self->scroll(1);
-                    }
-                } else {
-                    # no autowrap
-                    $pos->[0] = $self->width;
-                }
-            }
+            $self->wrapnext = 1 if $self->autowrap;
         }
+
     } elsif (  ord $char == 0 # null
             or ord $char == 7 # bell
             or ord $char == 016 # shift out
             or ord $char == 017 # shift in
       ) {
         # ignore
+
     } else {
         die ord $char;
     }
+
     $self->assert;
 }
 
 sub scroll {
     my ($self, $amt) = @_;
+
     my @part  = splice @{$self->data}, $self->regionlow-1, $self->regionhi-$self->regionlow+1;
     my @apart = splice @{$self->attr}, $self->regionlow-1, $self->regionhi-$self->regionlow+1;
+
     local $_;
     if ( $amt > 0 ) {
         shift @part for 1 .. $amt;
         shift @apart for 1 .. $amt;
         push @part, [ (' ') x $self->width ] for 1 .. $amt;
         push @apart, [ map {+ $self->defaultattr } 1 .. $self->width ] for 1 .. $amt;
+
     } elsif ( $amt < 0 ) {
         $amt = -$amt;
         pop @part for 1 .. $amt;
         pop @apart for 1 .. $amt;
         unshift @part, [ (' ') x $self->width ] for 1 .. $amt;
         unshift @apart, [ map {+ $self->defaultattr } 1 .. $self->width ] for 1 .. $amt;
+
     } else { die }
+
     splice @{$self->data}, $self->regionlow-1, 0, @part;
     splice @{$self->attr}, $self->regionlow-1, 0, @apart;
+    
     $self->assert;
 }
 
@@ -529,27 +601,36 @@ sub underline_as_string { join "\n", map { join "", map +($_->[ULINE] ? "1" : "0
 
 sub as_termstring {
     my ($self) = @_;
-    my $str = '';
+    
     my $defat = $self->defaultattr;
+
+    my $str = "\033[m";
     for my $y ( 0 .. $self->height-1 ) {
+
         my $drow = $self->data->[$y];
         my $arow = $self->attr->[$y];
-        $str .= "\033[m";
+
         my $lastattr = $self->defaultattr;
+
         for my $x ( 0 .. $self->width-1 ) {
             if ( join('/', @$lastattr) ne join('/', @{$arow->[$x]}) ) {
+
                 my $at = $arow->[$x];
+
                 $str .= "\033[".join(';', '',
                     ($at->[BOLD] ? "1" : ()),
                     ($at->[ULINE] ? "4" : ()),
                     ($at->[BCOLOR] != $defat->[BCOLOR] ? 4 . $at->[BCOLOR] : ()),
                     ($at->[FCOLOR] != $defat->[FCOLOR] ? 3 . $at->[FCOLOR] : ()),
                   )."m";
+
                 $lastattr = $at;
             }
+
             $str .= $drow->[$x];
         }
-        $str .= "\n";
+
+        $str .= "\n\033[m";
     }
     return $str;
 }
@@ -564,7 +645,7 @@ sub tabpositionfrom {
 
 sub assert {
     my ($self) = @_;
-    return unless $self->{'assertions_enabled'};
+    return unless ASSERTIONS_ENABLED;
     confess unless @{$self->{'buffers'}};
     confess if $self->{'active'} < 0;
     confess if $self->{'active'} > $#{$self->{'buffers'}};
@@ -577,9 +658,11 @@ sub assert {
     confess if $self->regionhi <= 0;
     confess if $self->regionhi > $self->height;
     confess if $self->regionhi < $self->regionlow;
+
     for my $row ( 0 .. $self->height-1 ) {
         confess $row if @{$self->data->[$row]} != $self->width;
         confess $row if @{$self->attr->[$row]} != $self->width;
+
         for my $ch ( 0 .. $self->width-1 ) {
             confess "$row,$ch" if length $self->data->[$row]->[$ch] != 1;
             confess "$row,$ch" if not ref $self->attr->[$row]->[$ch];
