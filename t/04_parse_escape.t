@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 81;
+use Test::More tests => 77;
 
 use TermParser;
 
@@ -10,7 +10,6 @@ my $term = TermParser->new( width => 8, height => 4 );
 
 is($term->as_string,           "        \n        \n        \n        ");
 is($term->bold_as_string,      "00000000\n00000000\n00000000\n00000000");
-is($term->reverse_as_string,   "00000000\n00000000\n00000000\n00000000");
 is($term->underline_as_string, "00000000\n00000000\n00000000\n00000000");
 is($term->fg_as_string,        "77777777\n77777777\n77777777\n77777777");
 is($term->bg_as_string,        "00000000\n00000000\n00000000\n00000000");
@@ -28,7 +27,6 @@ is($term->as_string, "b       \n        \n        \n        ");
 $term->parse("\010 ");
 is($term->as_string, "        \n        \n        \n        ");
 is($term->bold_as_string,      "00000000\n00000000\n00000000\n00000000");
-is($term->reverse_as_string,   "00000000\n00000000\n00000000\n00000000");
 is($term->underline_as_string, "00000000\n00000000\n00000000\n00000000");
 is($term->fg_as_string,        "77777777\n77777777\n77777777\n77777777");
 is($term->bg_as_string,        "00000000\n00000000\n00000000\n00000000");
@@ -54,7 +52,6 @@ is($term->curposy, 1);
 $term->parse(" ");
 is($term->as_string, "        \n        \n        \n        ");
 is($term->bold_as_string,      "00000000\n00000000\n00000000\n00000000");
-is($term->reverse_as_string,   "00000000\n00000000\n00000000\n00000000");
 is($term->underline_as_string, "00000000\n00000000\n00000000\n00000000");
 is($term->fg_as_string,        "77777777\n77777777\n77777777\n77777777");
 is($term->bg_as_string,        "00000000\n00000000\n00000000\n00000000");
@@ -113,7 +110,6 @@ is($term->curposy, 1);
 is($term->as_string, "        \n        \n        \n        ");
 
 is($term->bold_as_string,      "00000000\n00000000\n00000000\n00000000");
-is($term->reverse_as_string,   "00000000\n00000000\n00000000\n00000000");
 is($term->underline_as_string, "00000000\n00000000\n00000000\n00000000");
 is($term->fg_as_string,        "77777777\n77777777\n77777777\n77777777");
 is($term->bg_as_string,        "00000000\n00000000\n00000000\n00000000");
