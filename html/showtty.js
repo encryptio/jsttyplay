@@ -19,6 +19,10 @@ var makeTable = function (width, height) {
         var row = document.createElementNS(htmlns, "div");
         var arrrow = [];
         row.style.fontFamily = '"ProFont", "Luxi Mono", "Monaco", "Courier", "Courier new", monospace';
+        row.style.margin = '0';
+        row.style.padding = '0';
+        row.style.lineHeight = '1.2em';
+        row.style.wordSpacing = '0';
         for (var i = 1; i <= width; i++) {
             var charelem = document.createElementNS(htmlns, "pre");
             charelem.style.width = '1em';
@@ -28,6 +32,9 @@ var makeTable = function (width, height) {
             charelem.style.display = 'inline';
             charelem.style.fontWeight = 'normal';
             charelem.style.textDecoration = 'none';
+            charelem.style.letterSpacing = '0';
+            charelem.style.margin = '0';
+            charelem.style.padding = '0';
             charelem.appendChild(document.createTextNode(" "));
             row.appendChild(charelem);
             arrrow.push(charelem);
