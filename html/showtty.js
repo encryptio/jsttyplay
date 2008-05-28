@@ -287,5 +287,33 @@ showTTY = function (elem, data) {
     animateNextFrame(holder);
 };
 
+showTTYURL = function (elem, url) {
+    var showText = function (text) {
+        while ( elem.firstChild ) {
+            elem.removeChild( elem.firstChild );
+        }
+        elem.appendChild( document.createTextNode( text ) );
+    };
+
+    showText("Loading " + url);
+
+    var req = new XMLHttpRequest();
+    req.open("GET", url, true);
+    req.onreadystatechange = function () {
+        if ( this.readyState == 4 && this.status == 200 ) {
+            var data = eval("(" + this.responseText + ")");
+            if ( typeof data == "undefined" ) {
+                showText("Error: didn't get tty data from " + url);
+                req = null;
+                return;
+            }
+            showTTY(elem, data);
+        } else if ( this.readyState == 4 && this.status != 200 ) {
+            showText("Error: couldn't retrieve " + url + ", got status code " + this.status);
+            req = null;
+        }
+    };
+    req.send();
+};
 
 }());
