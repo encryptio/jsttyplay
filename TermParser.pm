@@ -385,6 +385,7 @@ sub set_mode {
       or $mode eq "?1" # cursor keys
       or $mode eq "?4" # smooth scrolling
       or $mode eq "?3" # 132-column mode
+      or $mode eq "?9" # mouse tracking on button press
       or $mode eq "7"  # ???
       or $mode eq "6"  # ???
       ) {
@@ -423,6 +424,7 @@ sub reset_mode {
       or $mode eq "?1" # cursor keys
       or $mode eq "?4" # smooth scrolling
       or $mode eq "?3" # 80 column mode
+      or $mode eq "?9" # mouse tracking on button press
       or $mode eq "7"  # ???
       or $mode eq "6"  # ???
       ) {
