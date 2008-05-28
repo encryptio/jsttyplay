@@ -313,7 +313,7 @@ showTTYURL = function (elem, url) {
             req = null;
         }
     };
-    req.send();
+    req.send(null);
 };
 
 }());
