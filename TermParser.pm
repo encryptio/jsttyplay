@@ -497,6 +497,9 @@ sub set_color {
             }
             $rev = $self->cursorattr->[REVERSE] = 0;
 
+        } elsif ( $m == 5 ) {
+            # blink, ignore
+
         } else {
             die "unknown color mode $m";
         }
