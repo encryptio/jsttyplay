@@ -2,8 +2,6 @@
 // Copyright 2008 Jack Christopher Kastorff
 (function(){
 
-var htmlns = "http://www.w3.org/1999/xhtml";
-
 var repeatString = function (str, rep) {
     var outstr = '';
     for (var i = 0; i < rep; i++) {
@@ -13,18 +11,18 @@ var repeatString = function (str, rep) {
 };
 
 var makeTable = function (width, height) {
-    var table = document.createElementNS(htmlns, "div");
+    var table = document.createElement("div");
     var arr = [];
     for (var j = 1; j <= height; j++) {
-        var row = document.createElementNS(htmlns, "div");
+        var row = document.createElement("div");
         var arrrow = [];
         row.style.fontFamily = '"ProFont", "Luxi Mono", "Monaco", "Courier", "Courier new", monospace';
         row.style.margin = '0';
         row.style.padding = '0';
-        row.style.lineHeight = '1.2em';
+        row.style.lineHeight = '1.0em';
         row.style.wordSpacing = '0';
         for (var i = 1; i <= width; i++) {
-            var charelem = document.createElementNS(htmlns, "pre");
+            var charelem = document.createElement("pre");
             charelem.style.width = '1em';
             charelem.style.height = '1em';
             charelem.style.backgroundColor = '#000';
@@ -307,15 +305,15 @@ showTTYURL = function (elem, url) {
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
     req.onreadystatechange = function () {
-        if ( this.readyState == 4 && this.status == 200 ) {
-            var data = eval("(" + this.responseText + ")");
+        if ( req.readyState == 4 && req.status == 200 ) {
+            var data = eval("(" + req.responseText + ")");
             if ( typeof data == "undefined" ) {
                 showText("Error: didn't get tty data from " + url);
                 req = null;
                 return;
             }
             showTTY(elem, data);
-        } else if ( this.readyState == 4 && this.status != 200 ) {
+        } else if ( req.readyState == 4 && req.status != 200 ) {
             showText("Error: couldn't retrieve " + url + ", got status code " + this.status);
             req = null;
         }
