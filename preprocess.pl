@@ -64,42 +64,53 @@ sub deltaFrame {
                     next MAINROW;
                 }
             }
-            my $pickstart = undef;
-            my $pickend = undef;
-            for my $i ( 0 .. length($old[$row])-1 ) {
-                if ( substr($old[$row], $i, 1) ne substr($new[$row], $i, 1) ) {
-                    if ( not defined $pickstart ) {
-                        $pickstart = $i;
-                    } elsif ( defined $pickstart and not defined $pickend and $i - $pickstart == 1 ) {
-                        $pickend = $i;
-                    } elsif ( defined $pickstart and defined $pickend and $i - $pickend == 1 ) {
-                        $pickend = $i;
+
+            if ( substr($new[$row],0,1) x length($new[$row]) eq $new[$row] ) {
+                # one char line mode
+                push @diff, [$row, ['a', substr($new[$row],0,1)]];
+                next MAINROW;
+            }
+            my @off = map { substr($old[$row], $_, 1) ne substr($new[$row], $_, 1) } 0 .. length($old[$row])-1;
+            my @offchunks = ();
+            for my $i ( 0 .. $#off ) {
+                if ( $off[$i] ) {
+                    if ( @offchunks and $offchunks[-1][1] == $i-1 ) {
+                        $offchunks[-1][1] = $i;
                     } else {
-                        undef $pickstart;
-                        undef $pickend;
-                        last;
+                        push @offchunks, [$i,$i];
                     }
                 }
             }
-            if ( defined $pickstart and defined $pickend ) {
-                my $chunk = substr($new[$row], $pickstart, $pickend-$pickstart+1);
+            if ( @offchunks > length($old[$row])/25 ) { # TODO: check difference lengths
+                # line mode - too many pieces
+                # too many pieces, push a single chunk
+                my $st = $offchunks[0][0];
+                my $en = $offchunks[-1][1];
+                my $chunk = substr($new[$row], $st, $en-$st+1);
                 if ( substr($chunk,0,1) x length($chunk) eq $chunk ) {
                     # one char chunk mode
-                    push @diff, [$row, $pickstart, $pickend, ['a',substr($chunk,0,1)]];
+                    push @diff, [$row, $st, $en, ['a',substr($chunk,0,1)]];
                 } else {
                     # chunk mode
-                    push @diff, [$row, $pickstart, $pickend, $chunk];
+                    push @diff, [$row, $st, $en, $chunk];
                 }
-            } elsif ( defined $pickstart and not defined $pickend ) {
-                # char mode
-                push @diff, [$row, $pickstart, substr($new[$row], $pickstart, 1)];
+                next MAINROW;
             } else {
-                if ( substr($new[$row],0,1) x length($new[$row]) eq $new[$row] ) {
-                    # one char line mode
-                    push @diff, [$row, ['a', substr($new[$row],0,1)]];
-                } else {
-                    # line mode
-                    push @diff, [$row, $new[$row]];
+                # worthwhile to run by chunks
+                for my $ch ( @offchunks ) {
+                    if ( $ch->[0] == $ch->[1] ) {
+                        # char mode
+                        push @diff, [$row, $ch->[0], substr($new[$row], $ch->[0], 1)];
+                    } else {
+                        my $chunk = substr($new[$row], $ch->[0], $ch->[1]-$ch->[0]+1);
+                        if ( substr($chunk,0,1) x length($chunk) eq $chunk ) {
+                            # one char chunk mode
+                            push @diff, [$row, $ch->[0], $ch->[1], ['a',substr($chunk,0,1)]];
+                        } else {
+                            # chunk mode
+                            push @diff, [$row, $ch->[0], $ch->[1], $chunk];
+                        }
+                    }
                 }
             }
         }
