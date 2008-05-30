@@ -378,16 +378,17 @@ sub parse_escape {
 sub set_mode {
     my ($self, $mode) = @_;
 
-    if ( $mode eq "8"  # auto repeat
-      or $mode eq "9"  # interlacing
-      or $mode eq "0"  # newline mode or error
-      or $mode eq "5"  # reverse video
-      or $mode eq "?1" # cursor keys
-      or $mode eq "?4" # smooth scrolling
-      or $mode eq "?3" # 132-column mode
-      or $mode eq "?9" # mouse tracking on button press
-      or $mode eq "7"  # ???
-      or $mode eq "6"  # ???
+    if ( $mode eq "8"     # auto repeat
+      or $mode eq "9"     # interlacing
+      or $mode eq "0"     # newline mode or error
+      or $mode eq "5"     # reverse video
+      or $mode eq "?1"    # cursor keys
+      or $mode eq "?4"    # smooth scrolling
+      or $mode eq "?3"    # 132-column mode
+      or $mode eq "?9"    # mouse tracking on button press
+      or $mode eq "?1000" # mouse tracking on button press and release
+      or $mode eq "7"     # ???
+      or $mode eq "6"     # ???
       ) {
         # ignore
 
@@ -417,16 +418,17 @@ sub set_mode {
 sub reset_mode {
     my ($self, $mode) = @_;
 
-    if ( $mode eq "8"  # auto repeat
-      or $mode eq "9"  # interlacing
-      or $mode eq "0"  # newline mode or error
-      or $mode eq "5"  # reverse video
-      or $mode eq "?1" # cursor keys
-      or $mode eq "?4" # smooth scrolling
-      or $mode eq "?3" # 80 column mode
-      or $mode eq "?9" # mouse tracking on button press
-      or $mode eq "7"  # ???
-      or $mode eq "6"  # ???
+    if ( $mode eq "8"     # auto repeat
+      or $mode eq "9"     # interlacing
+      or $mode eq "0"     # newline mode or error
+      or $mode eq "5"     # reverse video
+      or $mode eq "?1"    # cursor keys
+      or $mode eq "?4"    # smooth scrolling
+      or $mode eq "?3"    # 80 column mode
+      or $mode eq "?9"    # mouse tracking on button press
+      or $mode eq "?1000" # mouse tracking on button press and release
+      or $mode eq "7"     # ???
+      or $mode eq "6"     # ???
       ) {
         # ignore
 
