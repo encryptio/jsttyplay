@@ -4,6 +4,7 @@ use strict;
 $| = 1;
 
 my $coalesce_time = 0.05;
+my $iframe_frequency = 100;
 
 use Term::TtyRec;
 use TermParser;
@@ -218,7 +219,7 @@ while ( defined(my $time = parseFrame($rec, $term)) ) {
 
     $starttime = $time unless defined $starttime;
     
-    if ( $framect % 100 == 0 ) {
+    if ( $framect % $iframe_frequency == 0 ) {
         push @timeline, { t => $time-$starttime, i => 1, %curpos, compress_iframe(%new) };
     } else {
         my %delta = map {+ $_ => deltaFrame($buffers{$_}[1], $new{$_}) } keys %new;
