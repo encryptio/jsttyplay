@@ -191,8 +191,7 @@ sub parse_escape {
             or $escape eq "[>"   # ???
             or $escape eq "#5"   # single-width single-height line
             or $escape =~ /^\[.q$/ # led 1
-            or $escape eq ")0"
-            or $escape eq ")"
+            or $escape =~ /^[()*+].$/ # set character sets
       ) {
         # ignore
 
@@ -298,7 +297,7 @@ sub parse_escape {
         splice @$arow, $self->curposx-1, $del;
         push @$arow, map {+ dclone($arow->[-1]) } 1 .. $del;
 
-    } elsif ( $escape eq "[2J" ) {
+    } elsif ( $escape =~ /^\[.?J$/ ) {
         # erase display
         $self->clear;
 
