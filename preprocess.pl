@@ -61,7 +61,7 @@ sub deltaFrame {
             for my $other ( 0 .. $#old ) {
                 if ( $new[$row] eq $old[$other] ) {
                     # row copy mode
-                    push @diff, ['cp', $other, $row];
+                    push @diff, ['cp', $other+0, $row+0];
                     next MAINROW;
                 }
             }
