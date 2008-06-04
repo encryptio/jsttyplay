@@ -3,7 +3,9 @@ use warnings;
 use strict;
 $| = 1;
 
-my $readsize = 5;
+my $readsize = 1;
+my $skipto = 0;
+my $wait = 0.01;
 
 use Term::TtyRec;
 use TermParser;
@@ -32,9 +34,15 @@ sub parseFrame {
             $lasttime = $time;
         }
     }
-    $term->parse(substr $buf, 0, $readsize);
-    substr($buf, 0, $readsize) = '';
-    return $lasttime;
+    if ( $lasttime < $skipto ) {
+        $term->parse($buf);
+        $buf = '';
+        goto &parseFrame;
+    } else {
+        $term->parse(substr $buf, 0, $readsize);
+        substr($buf, 0, $readsize) = '';
+        return $lasttime;
+    }
 }
 
 ###
@@ -47,6 +55,6 @@ my $rec  = openRec($ARGV[0]);
 system("clear");
 while ( defined(my $time = parseFrame($rec, $term)) ) {
     print "\033[H".$term->as_termstring."--";
-    #sleep 0.01;
+    sleep $wait if $time >= $skipto and $wait;
 }
 
