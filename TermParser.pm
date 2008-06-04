@@ -57,7 +57,7 @@ sub reset {
     $self->{'wrapnext'} = 0;
     $self->{'autowrap'} = 1;
     $self->{'originmode'} = 0;
-    $self->{'linefeedback'} = 1;
+    $self->{'linefeedback'} = 0;
     $self->{'insertmode'} = 0;
     $self->{'title'} = 'TermParser';
 
