@@ -19,12 +19,10 @@ var makeTable = function (width, height) {
         row.style.fontFamily = '"ProFont", "Luxi Mono", "Monaco", "Courier", "Courier new", monospace';
         row.style.margin = '0';
         row.style.padding = '0';
-        row.style.lineHeight = '1.0em';
         row.style.wordSpacing = '0';
+        row.style.height = '1.2em';
         for (var i = 1; i <= width; i++) {
             var charelem = document.createElement("pre");
-            charelem.style.width = '1em';
-            charelem.style.height = '1em';
             charelem.style.backgroundColor = '#000';
             charelem.style.color = '#FFF';
             charelem.style.display = 'inline';
@@ -32,7 +30,7 @@ var makeTable = function (width, height) {
             charelem.style.textDecoration = 'none';
             charelem.style.letterSpacing = '0';
             charelem.style.margin = '0';
-            charelem.style.padding = '0';
+            charelem.style.padding = '0 0 0.2em 0';
             charelem.appendChild(document.createTextNode(" "));
             row.appendChild(charelem);
             arrrow.push(charelem);
@@ -158,32 +156,29 @@ var loadPFrame = function (table, rowcaches, fr, width, height) {
 
 var diffPushGeneric = function (table, d, rowcache, set) {
     // convert everything to line operations
-    var lines = [];
     for (var i = 0; i < d.length; i++) {
         var e = d[i];
         if ( e[0] == "cp" ) {
-            lines.push([e[2], rowcache[e[1]]]);
+            set(table, rowcache[e[1]], e[2]);
+            rowcache[e[2]] = rowcache[e[1]];
         } else if ( e[0] == 'char' ) {
             var r = e[1];
             var v = rowcache[r];
             var da = v.slice(0, e[2]) + e[3] + v.slice(e[2]+1);
-            lines.push([r, da]);
+            set(table, da, r);
+            rowcache[r] = da;
         } else if ( e[0] == 'chunk' ) {
             var r = e[1];
             var v = rowcache[r];
             var da = v.slice(0, e[2]) + e[4] + v.slice(e[3]+1);
-            lines.push([r, da]);
+            set(table, da, r);
+            rowcache[r] = da;
         } else if ( e[0] == 'line' ) {
-            lines.push([e[1], e[2]]);
+            set(table, e[2], e[1]);
+            rowcache[e[1]] = e[2];
         } else {
             throw new Error ("unknown p-frame item type " + e[0] + ", len " + e.length);
         }
-    }
-
-    // then set the lines
-    for (var i = 0; i < lines.length; i++) {
-        set(table, lines[i][1], lines[i][0]);
-        rowcache[lines[i][0]] = lines[i][1];
     }
 };
 
