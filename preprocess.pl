@@ -68,7 +68,7 @@ sub deltaFrame {
 
             if ( substr($new[$row],0,1) x length($new[$row]) eq $new[$row] ) {
                 # one char line mode
-                push @diff, [$row, ['a', substr($new[$row],0,1)]];
+                push @diff, [$row+0, ['a', substr($new[$row],0,1).""]];
                 next MAINROW;
             }
 
