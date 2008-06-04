@@ -90,10 +90,10 @@ sub deltaFrame {
                 my $chunk = substr($new[$row], $st, $en-$st+1);
                 if ( substr($chunk,0,1) x length($chunk) eq $chunk ) {
                     # one char chunk mode
-                    push @diff, [$row, $st, $en, ['a',substr($chunk,0,1)]];
+                    push @diff, [$row+0, $st+0, $en+0, ['a',substr($chunk,0,1).""]];
                 } else {
                     # chunk mode
-                    push @diff, [$row, $st, $en, $chunk];
+                    push @diff, [$row+0, $st+0, $en+0, $chunk.""];
                 }
                 next MAINROW;
             } else {
@@ -101,15 +101,15 @@ sub deltaFrame {
                 for my $ch ( @offchunks ) {
                     if ( $ch->[0] == $ch->[1] ) {
                         # char mode
-                        push @diff, [$row, $ch->[0], substr($new[$row], $ch->[0], 1)];
+                        push @diff, [$row+0, $ch->[0]+0, substr($new[$row], $ch->[0], 1).""];
                     } else {
                         my $chunk = substr($new[$row], $ch->[0], $ch->[1]-$ch->[0]+1);
                         if ( substr($chunk,0,1) x length($chunk) eq $chunk ) {
                             # one char chunk mode
-                            push @diff, [$row, $ch->[0], $ch->[1], ['a',substr($chunk,0,1)]];
+                            push @diff, [$row+0, $ch->[0]+0, $ch->[1]+0, ['a',substr($chunk,0,1).""]];
                         } else {
                             # chunk mode
-                            push @diff, [$row, $ch->[0], $ch->[1], $chunk];
+                            push @diff, [$row+0, $ch->[0]+0, $ch->[1]+0, $chunk.""];
                         }
                     }
                 }
