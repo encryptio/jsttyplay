@@ -168,7 +168,7 @@ while ( @ARGV ) {
     }
 }
 
-$term = TermParser->new( width => $width, height => $height );
+$term = TermParser->new( width => $width, height => $height, output_enable => 0 );
 
 my @timeline;
 
