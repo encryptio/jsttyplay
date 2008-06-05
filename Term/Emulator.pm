@@ -2,7 +2,7 @@ package Term::Emulator;
 use strict;
 
 use IO::Pty;
-use IO::Tty qw/ TIOCSWINSZ /;
+use IO::Tty qw/ TIOCSWINSZ TCGETA TCSETA ICANON ISIG IEXTEN ECHO ECHOE ECHOKE ECHOCTL PENDIN ICRNL IXON IXANY IMAXBEL BRKINT OPOST ONLCR TIOCGETP TIOCSETN /;
 use TermParser;
 
 use IO::Handle;
@@ -74,6 +74,8 @@ sub spawn {
 
         close $slave;
 
+        system("stty","sane");
+
         exec(@program);
 
         # exec failed, tell our parent what happened
@@ -121,11 +123,20 @@ sub spawn {
     return $self;
 }
 
+sub userinput {
+    my ($self, $input) = @_;
+    $self->term->userinput($input);
+    $self->_move_term_sendbuf;
+    $self->work_for(0);
+    return $self;
+}
+
 sub key {
     my ($self, $key) = @_;
     $self->term->key($key);
     $self->_move_term_sendbuf;
     $self->work_for(0);
+    return $self;
 }
 
 sub work_for {

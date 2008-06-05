@@ -128,15 +128,14 @@ sub dowrap {
 
 sub key {
     my ($self, $key) = @_;
+    die if length($key) > 1;
     if ( $key =~ /^[-0-9a-zA-Z<>,.\/?;:'"\[\]\{\}\\\|_=+~`!\@#\$\%^\&*\(\) \t\n]$/ ) {
         # printable ascii
         $self->output .= $key;
         $self->parse_char($key) if $self->localecho;
-    } elsif ( $key =~ /^[\033]$/ ) {
+    } else {
         # unprintable ascii
         $self->output .= $key;
-    } else {
-        die $key;
     }
 }
 
