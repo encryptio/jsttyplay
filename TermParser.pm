@@ -59,9 +59,9 @@ sub reset {
     $self->{'wrapnext'} = 0;
     $self->{'autowrap'} = 1;
     $self->{'originmode'} = 0;
-    $self->{'linefeedback'} = 0;
+    $self->{'linefeedback'} = 1;
     $self->{'insertmode'} = 0;
-    $self->{'localecho'} = 1;
+    $self->{'localecho'} = 0;
     $self->{'title'} = 'TermParser';
 
     return $self;
@@ -87,7 +87,7 @@ sub softreset {
     $self->{'originmode'} = 0;
     $self->{'linefeedback'} = 1;
     $self->{'insertmode'} = 0;
-    $self->{'localecho'} = 1;
+    $self->{'localecho'} = 0;
 
     return $self;
 }
@@ -128,10 +128,13 @@ sub dowrap {
 
 sub key {
     my ($self, $key) = @_;
-    if ( $key =~ /^[0-9a-zA-Z<>,.\/?;:'"\[\]\{\}\\\|_=+~`!\@#\$\%^\&*\(\) \t-]$/ ) {
+    if ( $key =~ /^[-0-9a-zA-Z<>,.\/?;:'"\[\]\{\}\\\|_=+~`!\@#\$\%^\&*\(\) \t\n]$/ ) {
         # printable ascii
         $self->output .= $key;
         $self->parse_char($key) if $self->localecho;
+    } elsif ( $key =~ /^[\033]$/ ) {
+        # unprintable ascii
+        $self->output .= $key;
     } else {
         die $key;
     }
@@ -155,7 +158,7 @@ sub parse {
         if ( $string =~ /\G\033([-#()*+.\/].)/gc ) { # character set sequence (SCS)
             $self->parse_escape($1);
 
-        } elsif ( $string =~ /\G\033(\].*?)\007/gc ) {
+        } elsif ( $string =~ /\G\033(\].*?\007)/gc ) {
             $self->parse_escape($1);
 
         } elsif ( $string =~ /\G\033(\[.*?[a-zA-Z<>])/gc ) {
@@ -182,13 +185,13 @@ sub parse_escape {
     if ( $escape =~ /^\[([0-9;]*)m$/ ) {
         $self->set_color($1);
 
-    } elsif ( $escape =~ /^\]2;(.*)$/ ) {
+    } elsif ( $escape =~ /^\]2;(.*)\007$/ ) {
         $self->title = $1; # window title
 
-    } elsif ( $escape =~ /^\]1;(.*)$/ ) {
+    } elsif ( $escape =~ /^\]1;(.*)\007$/ ) {
         # icon title
 
-    } elsif ( $escape =~ /^\]0;(.*)$/ ) {
+    } elsif ( $escape =~ /^\]0;(.*)\007$/ ) {
         $self->title = $1; # window and icon title
 
     } elsif ( $escape =~ /^\[(\??)(.+)h$/ ) {
