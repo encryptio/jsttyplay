@@ -56,20 +56,20 @@ sub deltaFrame {
     my @new = split /\n/, $new;
     die if @old != @new;
     my @diff;
-    MAINROW: for my $row ( 0 .. $#old ) {
+    MAINROW: for my $row ( 0 .. $#old ) { NEXTER: {
         if ( $new[$row] ne $old[$row] ) {
             for my $other ( 0 .. $#old ) {
                 if ( $new[$row] eq $old[$other] ) {
                     # row copy mode
                     push @diff, ['cp', $other+0, $row+0];
-                    next MAINROW;
+                    last NEXTER;
                 }
             }
 
             if ( substr($new[$row],0,1) x length($new[$row]) eq $new[$row] ) {
                 # one char line mode
                 push @diff, [$row+0, ['a', substr($new[$row],0,1).""]];
-                next MAINROW;
+                last NEXTER;
             }
 
             my @off = map { substr($old[$row], $_, 1) ne substr($new[$row], $_, 1) } 0 .. length($old[$row])-1;
@@ -100,6 +100,8 @@ sub deltaFrame {
                 }
             }
         }
+        } # NEXTER
+        $old[$row] = $new[$row];
     }
     return \@diff;
 }
