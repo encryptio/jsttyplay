@@ -49,23 +49,13 @@ var setTextChunk = function (tb, r, index, stx) {
 
 var setBoldChunk = function (tb, r, index, stx) {
     for (var i = 0; i < r.length; i++) {
-        var e = tb.arr[index][i+stx];
-        if ( r.charAt(i) == 0 ) {
-            e.style.fontWeight = 'normal';
-        } else {
-            e.style.fontWeight = 'bold';
-        }
+        tb.arr[index][i+stx].style.fontWeight = r.charAt(i) == 0 ? 'normal' : 'bold';
     }
 };
 
 var setUnderlineChunk = function (tb, r, index, stx) {
     for (var i = 0; i < r.length; i++) {
-        var e = tb.arr[index][i+stx];
-        if ( r.charAt(i) == 0 ) {
-            e.style.textDecoration = 'none';
-        } else {
-            e.style.textDecoration = 'underline';
-        }
+        tb.arr[index][i+stx].style.textDecoration = r.charAt(i) == 0 ? 'none' : 'underline';
     }
 };
 
