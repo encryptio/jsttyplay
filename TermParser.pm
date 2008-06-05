@@ -186,16 +186,30 @@ sub parse_escape {
         $self->reset_mode($_) for @codes;
 
     } elsif ( 0
-            or $escape eq "c"    # device attributes
-            or $escape eq "0c"   # device attributes
             or $escape eq "="    # keypad mode
             or $escape eq ">"    # keypad mode
             or $escape eq "[>"   # ???
             or $escape eq "#5"   # single-width single-height line
-            or $escape =~ /^\[.q$/ # led 1
+            or $escape =~ /^\[.q$/ # leds
             or $escape =~ /^[()*+].$/ # set character sets
       ) {
         # ignore
+
+    } elsif ( $escape eq "[c" or $escape eq "[0c" ) {
+        # report device attributes
+        $self->output .= "\033[?1;2c"; # I am VT100 with advanced video option
+
+    } elsif ( $escape eq "Z" ) {
+        # identify terminal (report)
+        $self->output .= "\033[/Z"; # I am VT52
+
+    } elsif ( $escape eq "[5n" ) {
+        # status report
+        $self->output .= "\033[0n"; # OK - we'll never have hardware problems.
+
+    } elsif ( $escape eq "[6n" ) {
+        # report cursor position (CPR)
+        $self->output .= "\033[".$self->curposy.";".$self->curposx."R";
 
     } elsif ( $escape eq "7" ) {
         # save cursor and attribute
@@ -710,13 +724,8 @@ sub linefeedback :lvalue { $_[0]->{'linefeedback'} }
 sub insertmode :lvalue { $_[0]->{'insertmode'} }
 sub title :lvalue { $_[0]->{'title'} }
 
-sub output :lvalue { $_[0]->{'output_enable'} ? $_[0]->{'output'} : do { my $t = ""; $t } }
-
-sub output_enable {
-    my $self = shift;
-    $self->{'output_enable'} = shift if @_;
-    return $self->{'output_enable'};
-}
+sub output :lvalue { my $t = ''; $_[0]->{'output_enable'} ? $_[0]->{'output'} : $t }
+sub output_enable { $_[0]->{'output_enable'} }
 
 1;
 
