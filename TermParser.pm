@@ -18,12 +18,14 @@ sub new {
     my ($class, %args) = @_;
     my $self = bless {}, $class;
 
-    my $width  = exists $args{'width'}  ? $args{'width'}  : 80;
-    my $height = exists $args{'height'} ? $args{'height'} : 24;
+    my $width  = exists $args{'width'}  ? delete $args{'width'}  : 80;
+    my $height = exists $args{'height'} ? delete $args{'height'} : 24;
 
     $self->{'width'} = $width;
     $self->{'height'} = $height;
     $self->{'extra_chars'} = ''; # buffer for incomplete escape codes
+    $self->{'output'} = ''; # buffer for output
+    $self->{'output_enable'} = exists $args{'output_enable'} ? delete $args{'output_enable'} : 1;
 
     $self->reset;
 
@@ -707,6 +709,14 @@ sub linefeedback :lvalue { $_[0]->{'linefeedback'} }
 
 sub insertmode :lvalue { $_[0]->{'insertmode'} }
 sub title :lvalue { $_[0]->{'title'} }
+
+sub output :lvalue { $_[0]->{'output_enable'} ? $_[0]->{'output'} : do { my $t = ""; $t } }
+
+sub output_enable {
+    my $self = shift;
+    $self->{'output_enable'} = shift if @_;
+    return $self->{'output_enable'};
+}
 
 1;
 
