@@ -1,4 +1,4 @@
-package TermParser;
+package Term::Emulator::Parser;
 use strict;
 use warnings;
 
@@ -62,7 +62,7 @@ sub reset {
     $self->{'linefeedback'} = 1;
     $self->{'insertmode'} = 0;
     $self->{'localecho'} = 0;
-    $self->{'title'} = 'TermParser';
+    $self->{'title'} = 'Term::Emulator';
 
     return $self;
 }

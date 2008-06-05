@@ -8,7 +8,7 @@ my $skipto = 0;
 my $wait = 0.01;
 
 use Term::TtyRec;
-use TermParser;
+use Term::Emulator::Parser;
 use FileHandle;
 use Time::HiRes qw/ time sleep /;
 use Carp;
@@ -49,7 +49,7 @@ sub parseFrame {
 
 my $width = 80;
 my $height = 24;
-my $term = TermParser->new( width => $width, height => $height );
+my $term = Term::Emulator::Parser->new( width => $width, height => $height );
 my $rec  = openRec($ARGV[0]);
 
 system("clear");

@@ -7,7 +7,7 @@ my $coalesce_time = 0.05;
 my $iframe_frequency = 100;
 
 use Term::TtyRec;
-use TermParser;
+use Term::Emulator::Parser;
 use FileHandle;
 use Time::HiRes qw/ time sleep /;
 use JSON;
@@ -168,7 +168,7 @@ while ( @ARGV ) {
     }
 }
 
-$term = TermParser->new( width => $width, height => $height, output_enable => 0 );
+$term = Term::Emulator::Parser->new( width => $width, height => $height, output_enable => 0 );
 
 my @timeline;
 

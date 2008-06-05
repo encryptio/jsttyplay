@@ -3,7 +3,7 @@ use strict;
 
 use IO::Pty;
 use IO::Tty qw/ TIOCSWINSZ TCGETA TCSETA ICANON ISIG IEXTEN ECHO ECHOE ECHOKE ECHOCTL PENDIN ICRNL IXON IXANY IMAXBEL BRKINT OPOST ONLCR TIOCGETP TIOCSETN /;
-use TermParser;
+use Term::Emulator::Parser;
 
 use IO::Handle;
 use Carp;
@@ -16,7 +16,7 @@ sub new {
     my $width  = exists $args{'width'}  ? delete $args{'width'}  : 80;
     my $height = exists $args{'height'} ? delete $args{'height'} : 24;
 
-    $self->{'term'} = TermParser->new(width => $width, height => $height);
+    $self->{'term'} = Term::Emulator::Parser->new(width => $width, height => $height);
     $self->{'pty'}  = IO::Pty->new;
     $self->{'pid'}  = undef;
 
@@ -33,7 +33,7 @@ sub set_size {
     my ($self, $width, $height) = @_;
 
     # TODO - kill WINCH the subproccess
-    # TODO - update the TermParser size
+    # TODO - update the Term::Emulator::Parser size
 
     ioctl $self->pty->slave, TIOCSWINSZ, pack "S!S!S!S!", $height, $width, $height, $width;
 

@@ -4,5 +4,5 @@ use warnings;
 
 use Test::More tests => 1;
 
-use_ok('TermParser');
+use_ok('Term::Emulator::Parser');
 

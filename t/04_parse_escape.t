@@ -4,9 +4,9 @@ use strict;
 
 use Test::More tests => 77;
 
-use TermParser;
+use Term::Emulator::Parser;
 
-my $term = TermParser->new( width => 8, height => 4 );
+my $term = Term::Emulator::Parser->new( width => 8, height => 4 );
 
 is($term->as_string,           "        \n        \n        \n        ");
 is($term->bold_as_string,      "00000000\n00000000\n00000000\n00000000");

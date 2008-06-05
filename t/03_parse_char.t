@@ -4,9 +4,9 @@ use strict;
 
 use Test::More tests => 9;
 
-use TermParser;
+use Term::Emulator::Parser;
 
-my $term = TermParser->new(width => 5, height => 2);
+my $term = Term::Emulator::Parser->new(width => 5, height => 2);
 
 $term->parse("abc");
 is($term->as_string, "abc  \n     ");
