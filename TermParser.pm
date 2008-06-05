@@ -61,6 +61,7 @@ sub reset {
     $self->{'originmode'} = 0;
     $self->{'linefeedback'} = 0;
     $self->{'insertmode'} = 0;
+    $self->{'localecho'} = 1;
     $self->{'title'} = 'TermParser';
 
     return $self;
@@ -86,6 +87,7 @@ sub softreset {
     $self->{'originmode'} = 0;
     $self->{'linefeedback'} = 1;
     $self->{'insertmode'} = 0;
+    $self->{'localecho'} = 1;
 
     return $self;
 }
@@ -121,6 +123,24 @@ sub dowrap {
         }
         
         $self->wrapnext = 0;
+    }
+}
+
+sub key {
+    my ($self, $key) = @_;
+    if ( $key =~ /^[0-9a-zA-Z<>,.\/?;:'"\[\]\{\}\\\|_=+~`!\@#\$\%^\&*\(\) \t-]$/ ) {
+        # printable ascii
+        $self->output .= $key;
+        $self->parse_char($key) if $self->localecho;
+    } else {
+        die $key;
+    }
+}
+
+sub userinput {
+    my ($self, $input) = @_;
+    for my $ch ( split //, $input ) {
+        $self->key($ch);
     }
 }
 
@@ -423,6 +443,9 @@ sub set_mode {
     } elsif ( $mode eq "?47" ) {
         $self->switch_to_screen(0); # primary
 
+    } elsif ( $mode eq "12" ) {
+        $self->localecho = 0;
+
     } else {
         die "unknown mode '$mode'";
     }
@@ -461,6 +484,9 @@ sub reset_mode {
 
     } elsif ( $mode eq "?47" ) {
         $self->switch_to_screen(1); # secondary
+
+    } elsif ( $mode eq "12" ) {
+        $self->localecho = 1;
 
     } else {
         die "unknown mode '$mode'";
@@ -720,6 +746,7 @@ sub autowrap :lvalue { $_[0]->{'autowrap'} }
 sub wrapnext :lvalue { $_[0]->{'wrapnext'} }
 sub originmode :lvalue { $_[0]->{'originmode'} }
 sub linefeedback :lvalue { $_[0]->{'linefeedback'} }
+sub localecho :lvalue { $_[0]->{'localecho'} }
 
 sub insertmode :lvalue { $_[0]->{'insertmode'} }
 sub title :lvalue { $_[0]->{'title'} }
