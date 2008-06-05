@@ -41,16 +41,15 @@ var makeTable = function (width, height) {
     return { "arr": arr, "elem": table };
 };
 
-var setTextRow = function (tb, r, index) {
-    for (var i = 0; i < tb.arr[index].length; i++) {
-        var e = tb.arr[index][i];
-        e.firstChild.replaceData(0, 1, r.charAt(i))
+var setTextChunk = function (tb, r, index, stx) {
+    for (var i = 0; i < r.length; i++) {
+        tb.arr[index][i+stx].firstChild.replaceData(0, 1, r.charAt(i));
     }
 };
 
-var setBoldRow = function (tb, r, index) {
-    for (var i = 0; i < tb.arr[index].length; i++) {
-        var e = tb.arr[index][i];
+var setBoldChunk = function (tb, r, index, stx) {
+    for (var i = 0; i < r.length; i++) {
+        var e = tb.arr[index][i+stx];
         if ( r.charAt(i) == 0 ) {
             e.style.fontWeight = 'normal';
         } else {
@@ -59,9 +58,9 @@ var setBoldRow = function (tb, r, index) {
     }
 };
 
-var setUnderlineRow = function (tb, r, index) {
-    for (var i = 0; i < tb.arr[index].length; i++) {
-        var e = tb.arr[index][i];
+var setUnderlineChunk = function (tb, r, index, stx) {
+    for (var i = 0; i < r.length; i++) {
+        var e = tb.arr[index][i+stx];
         if ( r.charAt(i) == 0 ) {
             e.style.textDecoration = 'none';
         } else {
@@ -72,42 +71,43 @@ var setUnderlineRow = function (tb, r, index) {
 
 var clut = { 0: "#000", 1: "#D00", 2: "#0D0", 3: "#DD0", 4: "#00D", 5: "#D0D", 6: "#0DD", 7: "#DDD" };
 
-var setFcolorRow = function (tb, r, index) {
-    for (var i = 0; i < tb.arr[index].length; i++) {
-        tb.arr[index][i].style.color = clut[r.charAt(i)];
+var setFcolorChunk = function (tb, r, index, stx) {
+    for (var i = 0; i < r.length; i++) {
+        tb.arr[index][i+stx].style.color = clut[r.charAt(i)];
     }
 };
 
-var setBcolorRow = function (tb, r, index) {
-    for (var i = 0; i < tb.arr[index].length; i++) {
-        tb.arr[index][i].style.backgroundColor = clut[r.charAt(i)];
+var t = 0;
+var setBcolorChunk = function (tb, r, index, stx) {
+    for (var i = 0; i < r.length; i++) {
+        tb.arr[index][i+stx].style.backgroundColor = clut[r.charAt(i)];
     }
 };
 
 var loadIFrame = function (tb, rowcaches, fr, width, height) {
     var d = uncompressIFrameBlock(fr.d, width);
     for (var i = 0; i < d.length; i++) {
-        setTextRow(tb, d[i], i);
+        setTextChunk(tb, d[i], i, 0);
         rowcaches.d[i] = d[i];
     }
     var B = uncompressIFrameBlock(fr.B, width);
     for (var i = 0; i < B.length; i++) {
-        setBoldRow(tb, B[i], i);
+        setBoldChunk(tb, B[i], i, 0);
         rowcaches.B[i] = B[i];
     }
     var U = uncompressIFrameBlock(fr.U, width);
     for (var i = 0; i < U.length; i++) {
-        setUnderlineRow(tb, U[i], i);
+        setUnderlineChunk(tb, U[i], i, 0);
         rowcaches.U[i] = U[i];
     }
     var f = uncompressIFrameBlock(fr.f, width);
     for (var i = 0; i < f.length; i++) {
-        setFcolorRow(tb, f[i], i);
+        setFcolorChunk(tb, f[i], i, 0);
         rowcaches.f[i] = f[i];
     }
     var b = uncompressIFrameBlock(fr.b, width);
     for (var i = 0; i < b.length; i++) {
-        setBcolorRow(tb, b[i], i);
+        setBcolorChunk(tb, b[i], i, 0);
         rowcaches.b[i] = b[i];
     }
 };
@@ -138,19 +138,19 @@ var uncompressIFrameBlock = function (d,width) {
 
 var loadPFrame = function (table, rowcaches, fr, width, height) {
     if ( fr.d ) {
-        diffPushGeneric(table, annotatedPFrameBlock(fr.d, width), rowcaches.d, setTextRow);
+        diffPushGeneric(table, annotatedPFrameBlock(fr.d, width), rowcaches.d, setTextChunk);
     }
     if ( fr.B )  {
-        diffPushGeneric(table, annotatedPFrameBlock(fr.B, width), rowcaches.B, setBoldRow);
+        diffPushGeneric(table, annotatedPFrameBlock(fr.B, width), rowcaches.B, setBoldChunk);
     }
     if ( fr.U ) {
-        diffPushGeneric(table, annotatedPFrameBlock(fr.U, width), rowcaches.U, setUnderlineRow);
+        diffPushGeneric(table, annotatedPFrameBlock(fr.U, width), rowcaches.U, setUnderlineChunk);
     }
     if ( fr.f ) {
-        diffPushGeneric(table, annotatedPFrameBlock(fr.f, width), rowcaches.f, setFcolorRow);
+        diffPushGeneric(table, annotatedPFrameBlock(fr.f, width), rowcaches.f, setFcolorChunk);
     }
     if ( fr.b ) {
-        diffPushGeneric(table, annotatedPFrameBlock(fr.b, width), rowcaches.b, setBcolorRow);
+        diffPushGeneric(table, annotatedPFrameBlock(fr.b, width), rowcaches.b, setBcolorChunk);
     }
 };
 
@@ -159,22 +159,22 @@ var diffPushGeneric = function (table, d, rowcache, set) {
     for (var i = 0; i < d.length; i++) {
         var e = d[i];
         if ( e[0] == "cp" ) {
-            set(table, rowcache[e[1]], e[2]);
+            set(table, rowcache[e[1]], e[2], 0);
             rowcache[e[2]] = rowcache[e[1]];
         } else if ( e[0] == 'char' ) {
             var r = e[1];
             var v = rowcache[r];
             var da = v.slice(0, e[2]) + e[3] + v.slice(e[2]+1);
-            set(table, da, r);
+            set(table, e[3], e[1], e[2]);
             rowcache[r] = da;
         } else if ( e[0] == 'chunk' ) {
             var r = e[1];
             var v = rowcache[r];
             var da = v.slice(0, e[2]) + e[4] + v.slice(e[3]+1);
-            set(table, da, r);
+            set(table, e[4], e[1], e[2]);
             rowcache[r] = da;
         } else if ( e[0] == 'line' ) {
-            set(table, e[2], e[1]);
+            set(table, e[2], e[1], 0);
             rowcache[e[1]] = e[2];
         } else {
             throw new Error ("unknown p-frame item type " + e[0] + ", len " + e.length);
@@ -219,7 +219,7 @@ var annotatedPFrameBlock = function (frame, width) {
 var handleCursor = function (table, bgcache, curpos, dx, dy) {
     if ( typeof dx == 'number' || typeof dy == 'number' ) {
         // make sure the old cursor position has been overwritten
-        setBcolorRow(table, bgcache[curpos[1]-1], curpos[1]-1);
+        setBcolorChunk(table, bgcache[curpos[1]-1].charAt(curpos[0]), curpos[1]-1, curpos[0]-1);
         if ( typeof dx == 'number' ) {
             curpos[0] = dx;
         }
