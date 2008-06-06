@@ -163,7 +163,11 @@ sub work_for {
 
             my $buf = '';
             my $n = sysread $self->pty, $buf, 4096;
-            die if $n == 0; # TODO: handle EOF
+            if ( $n == 0 ) {
+                # EOF
+                $self->kill if $self->is_active;
+                last;
+            }
             $self->term->parse($buf); # pass data sent from the pty slave to the terminal
             $self->_move_term_sendbuf;
         }
@@ -200,6 +204,32 @@ sub is_active {
     } else {
         undef $self->{'pid'};
     }
+}
+
+sub kill {
+    my ($self, $signal) = @_;
+    $signal = "KILL" unless defined $signal;
+
+    return 0 unless $self->is_active;
+    return kill $signal, $self->{'pid'};
+}
+
+sub stop_it_in {
+    my ($self, $maxtime) = @_;
+    $maxtime = 5 unless defined $maxtime;
+    return 0 unless $self->is_active;
+
+    kill KILL => $self->{'pid'};
+    my $killtime = time;
+    while ( time() - $killtime < $maxtime ) {
+        return 1 if not $self->is_active;
+        sleep 0.05;
+    }
+
+    kill TERM => $self->{'pid'};
+
+    sleep 0.01;
+    return $self->is_active;
 }
 
 sub _wait_for_inactive {
