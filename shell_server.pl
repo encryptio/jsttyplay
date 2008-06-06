@@ -44,6 +44,13 @@ startStreamTTY( document.getElementById("tty") );
 </html>
 EOF
         return RC_OK;
+    } elsif ( $path eq "/streamtty.js" ) {
+        open my $lf, "<", "html/streamtty.js" or die $!;
+        my $content = do { local $/; <$lf> };
+        close $lf;
+        $res->code(RC_OK);
+        $res->content($content);
+        return RC_OK;
     } else {
         $res->code(404);
         $res->content("Not found.");
