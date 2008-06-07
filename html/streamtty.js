@@ -231,7 +231,7 @@ var makeCache = function (ch, wid, hei) {
 };
 
 var newSendBuffer = function (h) {
-    if ( ! h.activeRequest ) {
+    if ( ! h.activeRequest && h.sendBuffer.length > 0 ) {
         if ( h.timer ) clearTimeout(h.timer);
         request(h, "user input", { keys: h.sendBuffer } );
         h.sendBuffer = '';
@@ -239,6 +239,7 @@ var newSendBuffer = function (h) {
 };
 
 var request = function (h, cmd, args) {
+    if ( h.activeRequest ) return;
     var url = '/api?';
     args['type'] = cmd;
     if ( h.id ) args['id'] = h.id;
@@ -248,6 +249,7 @@ var request = function (h, cmd, args) {
     }
     url += urlargs.join("&");
 
+    h.activeRequest = true;
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
     req.onreadystatechange = function () {
@@ -255,6 +257,7 @@ var request = function (h, cmd, args) {
             var data = eval('(' + req.responseText + ')');
             if ( typeof data == "undefined" ) {
                 alert("err: undefined");
+                h.activeRequest = false;
                 req = null;
                 return;
             }
@@ -271,17 +274,21 @@ var request = function (h, cmd, args) {
                     handleCursor(h.table, h.rowcaches.b, h.curpos, data.iframe.x, data.iframe.y);
                 }
                 h.timer = setTimeout( function () { request(h, "pframe", { }); }, h.timerlen.current );
-                h.timerlen.current += h.timerlen.step;
+                h.timerlen.current *= h.timerlen.step;
                 if ( h.timerlen.current > h.timerlen.max ) {
                     h.timerlen.current = h.timerlen.max;
                 }
+                h.activeRequest = false;
+                newSendBuffer(h);
             } else {
+                h.activeRequest = false;
                 alert("err: " + data.error);
             }
             req = null;
             return;
         } else if ( req.readyState == 4 && req.status != 200 ) {
             alert("err: response code " + req.status);
+            h.activeRequest = false;
             req = null;
             return;
         }
@@ -324,11 +331,12 @@ startStreamTTY = function (elem) {
         'curpos': [1,1],
         'sendBuffer': '',
         'timerlen': {
-            'max': 10000,
-            'current': 250,
-            'min': 250,
-            'step': 250
-        }
+            'max': 15000,
+            'current': 100,
+            'min': 100,
+            'step': 1.05
+        },
+        'activeRequest': false,
       };
 
     document.body.addEventListener( "keypress", function (e) { return keyPressHandler(holder, e); }, true );
