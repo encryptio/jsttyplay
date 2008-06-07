@@ -302,9 +302,10 @@ sub parse_escape {
         my $arow = $self->attr->[$self->curposy-1];
         @$arow = map { +$self->defaultattr } @$arow;
 
-    } elsif ( $escape =~ /^\[(\d+)M$/ ) {
+    } elsif ( $escape =~ /^\[(\d*)M$/ ) {
         # delete lines
         my $erase = $1;
+        $erase = 0 if not length $erase;
         if ( $self->curposy >= $self->regionlow and $self->curposy <= $self->regionhi ) {
             $erase = $self->regionhi-$self->curposy+1 if $erase > $self->regionhi-$self->curposy+1;
             my $aclone = $self->attr->[$self->regionhi-1];
@@ -314,9 +315,10 @@ sub parse_escape {
             splice @{$self->data}, $self->regionhi-$erase, 0, map [ (' ') x $self->width ], 1 .. $erase;
         }
 
-    } elsif ( $escape =~ /^\[(\d+)L$/ ) {
+    } elsif ( $escape =~ /^\[(\d*)L$/ ) {
         # insert lines
         my $insert = $1;
+        $insert = 0 if not length $insert;
         if ( $self->curposy >= $self->regionlow and $self->curposy <= $self->regionhi ) {
             $insert = $self->regionhi-$self->curposy+1 if $insert > $self->regionhi-$self->curposy+1;
             splice @{$self->attr}, $self->curposy-1, 0, map [ map {+ $self->defaultattr } 1 .. $self->width ], 1 .. $insert;
@@ -546,7 +548,7 @@ sub set_color {
             # blink, ignore
 
         } else {
-            die "unknown color mode $m";
+            warn "unknown color mode $m";
         }
     }
 }
