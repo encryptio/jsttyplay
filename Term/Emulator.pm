@@ -152,6 +152,7 @@ sub work_for {
     my ($self, $time) = @_;
     my $start = time;
     my $ptyfn = fileno($self->pty);
+    my $loops = 0;
     while ( 1 ) {
         my $readvec = '';
         vec($readvec, $ptyfn, 1) = 1;
@@ -162,7 +163,7 @@ sub work_for {
         }
 
         my $len = ($start + $time) - time;
-        $len = 0 if $len < 0;
+        last if $len < 0 and $loops;
         my $nfound = select($readvec, $writevec, undef, $len);
         last unless $nfound; # if no handles have been written to, we've finished our time chunk
 
@@ -171,7 +172,7 @@ sub work_for {
             # pty can read
 
             my $buf = '';
-            my $n = sysread $self->pty, $buf, 4096;
+            my $n = sysread $self->pty, $buf, 128;
             if ( $n == 0 ) {
                 # EOF
                 $self->kill if $self->is_active;
@@ -190,6 +191,7 @@ sub work_for {
         }
 
         # TODO: check for error conditions
+        $loops++;
     }
 
     return $self;
