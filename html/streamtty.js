@@ -209,7 +209,7 @@ var annotatedPFrameBlock = function (frame, width) {
 var handleCursor = function (table, bgcache, curpos, dx, dy) {
     if ( typeof dx == 'number' || typeof dy == 'number' ) {
         // make sure the old cursor position has been overwritten
-        setBcolorChunk(table, bgcache[curpos[1]-1].charAt(curpos[0]), curpos[1]-1, curpos[0]-1);
+        setBcolorChunk(table, bgcache[curpos[1]-1].charAt(curpos[0]-1), curpos[1]-1, curpos[0]-1);
         if ( typeof dx == 'number' ) {
             curpos[0] = dx;
         }
