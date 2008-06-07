@@ -9,6 +9,11 @@ use IO::Handle;
 use Carp;
 use Time::HiRes qw/ time sleep /;
 
+our $STDIN, $STDOUT, $STDERR;
+open $STDIN, "<&=", \*STDIN or die;
+open $STDOUT, ">&=", \*STDOUT or die;
+open $STDERR, ">&=", \*STDERR or die;
+
 sub new {
     my ($class, %args) = @_;
     my $self = bless {}, $class;
@@ -68,9 +73,13 @@ sub spawn {
         $slave->set_raw;
 
         # reopen STD{IN,OUT,ERR} to use the pty
-        open(STDIN,  "<&", $slave->fileno) or croak "Couldn't reopen STDIN for reading: $!";
-        open(STDOUT, "<&", $slave->fileno) or croak "Couldn't reopen STDOUT for writing: $!";
-        open(STDERR, "<&", $slave->fileno) or croak "Couldn't reopen STDERR for writing: $!";
+    eval {
+        open($STDIN,  "<&", $slave->fileno) or croak "Couldn't reopen STDIN for reading: $!";
+        open($STDOUT, ">&", $slave->fileno) or croak "Couldn't reopen STDOUT for writing: $!";
+        open($STDERR, ">&", $slave->fileno) or croak "Couldn't reopen STDERR for writing: $!";
+    };
+    warn "t: $@" if $@;
+    die "t: $@" if $@;
 
         close $slave;
 
