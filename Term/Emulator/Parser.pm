@@ -305,7 +305,7 @@ sub parse_escape {
     } elsif ( $escape =~ /^\[(\d*)M$/ ) {
         # delete lines
         my $erase = $1;
-        $erase = 0 if not length $erase;
+        $erase = 1 if not length $erase;
         if ( $self->curposy >= $self->regionlow and $self->curposy <= $self->regionhi ) {
             $erase = $self->regionhi-$self->curposy+1 if $erase > $self->regionhi-$self->curposy+1;
             my $aclone = $self->attr->[$self->regionhi-1];
@@ -318,7 +318,7 @@ sub parse_escape {
     } elsif ( $escape =~ /^\[(\d*)L$/ ) {
         # insert lines
         my $insert = $1;
-        $insert = 0 if not length $insert;
+        $insert = 1 if not length $insert;
         if ( $self->curposy >= $self->regionlow and $self->curposy <= $self->regionhi ) {
             $insert = $self->regionhi-$self->curposy+1 if $insert > $self->regionhi-$self->curposy+1;
             splice @{$self->attr}, $self->curposy-1, 0, map [ map {+ $self->defaultattr } 1 .. $self->width ], 1 .. $insert;
