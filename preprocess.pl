@@ -23,6 +23,7 @@ sub openRec {
     return $rec;
 }
 
+my $readframes = 0;
 {
     my $lasttime = undef;
     my @data = ();
@@ -33,6 +34,7 @@ sub openRec {
             my ($time, $data) = $rec->read_next;
             last unless defined $time;
             push @data, [$time, $data];
+            $readframes++;
         }
         if ( @data > 1 ) {
             my $ld = pop @data;
@@ -110,11 +112,11 @@ for my $k ( keys %buffers ) {
 
 my $starttime = undef;
 while ( defined(my $time = parseFrame($rec, $term)) ) {
-    push @timeline, $encoder->frames % $iframe_frequency == 0 ? $encoder->next_iframe : $encoder->next_pframe;
-    print "\rparse... ".$encoder->frames." \033[K";
+    push @timeline, $encoder->frames % $iframe_frequency == 0 ? $encoder->next_iframe($time) : $encoder->next_pframe($time);
+    print "\rparse... ".$encoder->frames." ($readframes) \033[K";
 }
 
-print "\rparsed ".$encoder->frames." frames\033[K\n";
+print "\rparsed ".$encoder->frames." frames ($readframes from ttyrec)\033[K\n";
 print "serialize\n";
 
 open my $sf, ">", $outfile or die "Couldn't open $outfile for writing: $!";
