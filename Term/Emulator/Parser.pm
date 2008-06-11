@@ -26,6 +26,7 @@ sub new {
     $self->{'extra_chars'} = ''; # buffer for incomplete escape codes
     $self->{'output'} = ''; # buffer for output
     $self->{'output_enable'} = exists $args{'output_enable'} ? delete $args{'output_enable'} : 1;
+    $self->{'strict'} = exists $args{'strict'} ? delete $args{'strict'} : 0;
 
     $self->reset;
 
@@ -428,6 +429,7 @@ sub set_mode {
       or $mode eq "?1000" # mouse tracking on button press and release
       or $mode eq "7"     # ???
       or $mode eq "6"     # ???
+      or $mode eq "?25"   # ???
       ) {
         # ignore
 
@@ -471,6 +473,7 @@ sub reset_mode {
       or $mode eq "?1000" # mouse tracking on button press and release
       or $mode eq "7"     # ???
       or $mode eq "6"     # ???
+      or $mode eq "?25"   # ???
       ) {
         # ignore
 
