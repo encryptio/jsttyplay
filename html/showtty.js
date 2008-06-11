@@ -232,8 +232,13 @@ var animateNextFrame = function (holder) { with (holder) {
     handleCursor(table, rowcaches.b, curpos, fr.x, fr.y);
     nextframe++;
     if ( timeline.length > nextframe ) {
-        var wait = timeline[nextframe].t - timeline[nextframe-1].t;
-        setTimeout(function(){animateNextFrame(holder);}, wait*1000);
+        var wait = timeadd + timeline[nextframe].t - (new Date).getTime()/1000;
+        if ( wait < 0 ) {
+            // we're out of date! try to catch up.
+            return animateNextFrame(holder);
+        } else {
+            setTimeout(function(){animateNextFrame(holder);}, wait*1000);
+        }
     }
 }};
 
@@ -271,7 +276,8 @@ showTTY = function (elem, data) {
             'B': makeCache("0", width, height),
             'U': makeCache("0", width, height)
         },
-        'curpos': [1,1]
+        'curpos': [1,1],
+        'timeadd': (new Date).getTime()/1000-timeline[0].t
       };
 
     animateNextFrame(holder);
