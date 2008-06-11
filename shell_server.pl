@@ -88,7 +88,7 @@ sub api {
     if ( $uri->query_param("type") eq "create session" ) {
         my $id = new_session();
         print STDERR "new session: $id\n";
-        $sessions{$id}->{'term'}->work_for(0.05);
+        $sessions{$id}->{'term'}->work_for(0.02);
         print "status: 200\015\012content-type: text/json\015\012\015\012";
         print to_json( { ok => 1, id => $id, iframe => $sessions{$id}->{'encoder'}->next_iframe } );
         return;
@@ -99,7 +99,7 @@ sub api {
         $sessions{$id}{'last_active'} = time;
         my ($term, $enc) = @{$sessions{$id}}{'term', 'encoder'};
         $term->userinput($uri->query_param("keys"));
-        $term->work_for(0.05);
+        $term->work_for(0.02);
         print "status: 200\015\012content-type: text/json\015\012\015\012";
         print to_json( { ok => 1, id => $id, pframe => $enc->next_pframe } );
         return;
@@ -109,7 +109,7 @@ sub api {
         return req_error("No such session.") unless exists $sessions{$id};
         $sessions{$id}{'last_active'} = time;
         my ($term, $enc) = @{$sessions{$id}}{'term', 'encoder'};
-        $term->work_for(0.05);
+        $term->work_for(0.02);
         print "status: 200\015\012content-type: text/json\015\012\015\012";
         print to_json( { ok => 1, id => $id, pframe => $enc->next_pframe } );
         return;
