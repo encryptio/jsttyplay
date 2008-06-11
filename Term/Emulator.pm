@@ -163,7 +163,10 @@ sub work_for {
         }
 
         my $len = ($start + $time) - time;
-        last if $len < 0 and $loops;
+        if ( $len < 0 ) {
+            last if $loops;
+            $len = 0;
+        }
         my $nfound = select($readvec, $writevec, undef, $len);
         last unless $nfound; # if no handles have been written to, we've finished our time chunk
 
@@ -172,7 +175,7 @@ sub work_for {
             # pty can read
 
             my $buf = '';
-            my $n = sysread $self->pty, $buf, 128;
+            my $n = sysread $self->pty, $buf, 16384;
             if ( $n == 0 ) {
                 # EOF
                 $self->kill if $self->is_active;
