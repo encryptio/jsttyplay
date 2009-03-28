@@ -562,7 +562,7 @@ sub parse_char {
         $self->curposx = 1;
         $self->wrapnext = 0;
 
-    } elsif ( $char eq "\012" ) { # line feed
+    } elsif ( $char eq "\012" or $char eq "\014" ) { # line feed / form feed
         $self->curposx = 1 if $self->linefeedback;
         $self->curposy++;
         $self->wrapnext = 0;
