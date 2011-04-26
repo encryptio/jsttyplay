@@ -1,6 +1,8 @@
 package Term::Emulator;
 use strict;
 
+our $VERSION = 0.0001;
+
 use IO::Pty;
 use IO::Tty qw/ TIOCSWINSZ TCGETA TCSETA ICANON ISIG IEXTEN ECHO ECHOE ECHOKE ECHOCTL PENDIN ICRNL IXON IXANY IMAXBEL BRKINT OPOST ONLCR TIOCGETP TIOCSETN /;
 use Term::Emulator::Parser;
@@ -8,6 +10,26 @@ use Term::Emulator::Parser;
 use IO::Handle;
 use Carp;
 use Time::HiRes qw/ time sleep /;
+
+=head1 NAME
+
+Term::Emulator - Pure-perl terminal emulator
+
+=head1 SYNOPSIS
+
+    my $term = Term::Emulator->new;
+    $term->spawn("bash");
+
+    while ( 1 ) {
+        my $input = ...read input...;
+        $term->userinput($input);
+
+        $term->work_for(0.01);
+
+        display($term);
+    }
+
+=cut
 
 our $STDIN, $STDOUT, $STDERR;
 open $STDIN, "<&=", \*STDIN or die;
