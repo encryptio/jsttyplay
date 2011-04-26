@@ -1,4 +1,4 @@
-var VTParse = (function(){
+var VTParser = (function(){
 
 var warnDefault = function (msg) {
     console.log(msg);
@@ -463,5 +463,5 @@ return function (term_cb, warn) {
 })();
 
 if ( typeof(exports) != 'undefined' )
-    exports.VTParse = VTParse;
+    exports.VTParser = VTParser;
 

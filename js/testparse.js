@@ -1,12 +1,12 @@
 var ttyrec     = require("./ttyrec").TTYRecParse,
-    VTParse    = require("./vt/parse").VTParse,
+    VTParser   = require("./vt/parse").VTParser,
     VTEmulator = require("./vt/emulate").VTEmulator,
     fs         = require('fs');
 
 var filename = process.argv[2];
 
 var emu = new VTEmulator({});
-var parser = VTParse(emu.handleEventDirect.bind(emu));
+var parser = VTParser(emu.handleEventDirect.bind(emu));
 
 console.log("\033[2J\033[H");
 
