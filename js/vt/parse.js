@@ -203,9 +203,42 @@ return function (term_cb, warn) {
 
         ////////////////////////////////////////////////////////////////////////////////
         // normal characters
-        [/^[^\033\007\010\011\012\013\014\015\016\017]+/, function (m) {
+
+        // ascii
+        [/^[^\033\007\010\011\012\013\014\015\016\017\x80-\xFF]+/, function (m) {
+            if ( /[\x80-\xFF]/.exec(m) ) {
+                console.log("low byte regex matched high bytes");
+            }
             term_cb('normalString', m[0]);
         }],
+
+        // utf-8
+        [/^[\xC2\xDF][\x80-\xBF]/, function (m) {
+            var p1 = m[0].charCodeAt(0)-192;
+            var p2 = m[0].charCodeAt(1)-128;
+            var code = p1*64 + p2;
+            console.log("utf-8 2 byte sequence for " + code);
+            term_cb('normalString', String.fromCharCode(code));
+        }],
+        [/^(\xE0[\xA0-\xBF]|[\xE1-\xEC][\x80-\xBF]|\xED[\x80-\x9F]|[\xEE-\xEF][\x80-\xBF])[\x80-\xBF]/, function (m) {
+            var p1 = m[0].charCodeAt(0)-224;
+            var p2 = m[0].charCodeAt(1)-128;
+            var p3 = m[0].charCodeAt(2)-128;
+            var code = (p1*64 + p2)*64 + p3;
+            console.log("utf-8 3 byte sequence for " + code);
+            term_cb('normalString', String.fromCharCode(code));
+        }],
+        [/^(\xF0[\x90-\xBF]|[\xF1-\xF3][\x80-\xBF]|\xF4[\x80-\x8F])[\x80-\xBF][\x80-\xBF]/, function (m) {
+            var p1 = m[0].charCodeAt(0)-240;
+            var p2 = m[0].charCodeAt(1)-128;
+            var p3 = m[0].charCodeAt(2)-128;
+            var p4 = m[0].charCodeAt(3)-128;
+            var code = ((p1*64 + p2)*64 + p3)*64 + p4
+            console.log("utf-8 4 byte sequence for " + code);
+            term_cb('normalString', String.fromCharCode(code)); // TODO: verify that fromCharCode can handle this
+        }],
+
+        // TODO: eat malformed utf-8
 
         ////////////////////////////////////////////////////////////////////////////////
         // control sequences
