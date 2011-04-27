@@ -196,6 +196,10 @@ emu.prototype = {
         this.ev_setIconTitle(title);
     },
 
+    ev_resetMargins: function () {
+        this.ev_setMargins(1,this.height);
+    },
+
     ev_setMargins: function (top, bottom) {
         top -= 1;
         bottom -= 1;
