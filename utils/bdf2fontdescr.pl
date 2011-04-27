@@ -46,7 +46,7 @@ while ( <STDIN> ) {
 
     if ( /^FONT (.+)$/ ) {
         warn "Font does not appear to be an ISO10646 (Unicode) font.\n"
-            if !/-ISO10646-/;
+            if !/-ISO10646-/i;
     } elsif ( /^STARTCHAR/ ) {
         $char = '';
     } elsif ( /^ENDCHAR/ ) {
