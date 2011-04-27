@@ -71,7 +71,7 @@ while ( <$lf> ) {
     if ( length ) {
         $char_line_no = $line_no unless defined $char_line_no;
         $char_data .= "$_\n";
-    } else {
+    } elsif ( length $char_data ) {
         parse_char($char_data, $char_line_no);
         $char_data = '';
         undef $char_line_no;
