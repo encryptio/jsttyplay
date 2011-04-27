@@ -19,6 +19,9 @@ var emu = function (opts) {
     if ( opts.output )
         this.outputCallback = opts.output;
 
+    if ( opts.cursor )
+        this.cursorCallback = opts.cursor;
+
     this.width  = opts.width  || 80;
     this.height = opts.height || 24;
 
@@ -62,7 +65,7 @@ emu.prototype = {
             this.scr.c.text.push(' ');
             this.scr.c.bold.push(false);
             this.scr.c.underline.push(false);
-            this.scr.c.lowintensity.push(false);
+            this.scr.c.lowintensity.push(true);
             this.scr.c.blink.push(false);
             this.scr.c.fcolor.push(7);
             this.scr.c.bcolor.push(0);
@@ -70,7 +73,7 @@ emu.prototype = {
             this.scralt.c.text.push(' ');
             this.scralt.c.bold.push(false);
             this.scralt.c.underline.push(false);
-            this.scralt.c.lowintensity.push(false);
+            this.scralt.c.lowintensity.push(true);
             this.scralt.c.blink.push(false);
             this.scralt.c.fcolor.push(7);
             this.scralt.c.bcolor.push(0);
@@ -96,7 +99,7 @@ emu.prototype = {
         this.cursor.y = 0;
         this.cursor.bold = false;
         this.cursor.underline = false;
-        this.cursor.lowintensity = false;
+        this.cursor.lowintensity = true;
         this.cursor.blink = false;
         this.cursor.reversed = false; // state, fcolor and bcolor are flipped when this is
         this.cursor.invisible = false; // TODO: implement
@@ -163,7 +166,7 @@ emu.prototype = {
         },
     },
 
-    postUpdate: function (y, minx, maxx) {
+    postChange: function (y, minx, maxx) {
         if ( this.changeCallback )
             this.changeCallback(y, minx, maxx);
     },
@@ -171,6 +174,11 @@ emu.prototype = {
     postSpecial: function (obj) {
         if ( this.specialCallback )
             this.specialCallback(obj);
+    },
+
+    postCursor: function () {
+        if ( this.cursorCallback )
+            this.cursorCallback(this.cursor.x, this.cursor.y);
     },
 
     ev_setWindowTitle: function (title) {
@@ -224,6 +232,7 @@ emu.prototype = {
         } else if ( action == 'pop' ) {
             if ( this.cursorStack.length > 0 )
                 this.cursor = this.cursorStack.pop();
+            this.postCursor();
 
         } else {
             throw "Can't do cursorStack action "+action;
@@ -234,7 +243,7 @@ emu.prototype = {
         if ( attr == 0 ) {
             this.cursor.bold = false;
             this.cursor.underline = false;
-            this.cursor.lowintensity = false;
+            this.cursor.lowintensity = true;
             this.cursor.blink = false;
             this.cursor.reversed = false;
             this.cursor.invisible = false;
@@ -319,7 +328,7 @@ emu.prototype = {
             this.scr.c.bcolor.splice(idx, 0, this.cursor.bcolor);
             this.scr.c.bcolor.splice(rmidx, 1);
             
-            this.postUpdate(this.cursor.y, this.cursor.x, this.width);
+            this.postChange(this.cursor.y, this.cursor.x, this.width-1);
         } else {
             // not this.mode.insert -> replace
 
@@ -332,23 +341,26 @@ emu.prototype = {
                     this.cursor.fcolor,
                     this.cursor.bcolor);
 
-            this.postUpdate(this.cursor.y, this.cursor.x, this.cursor.x);
+            this.postChange(this.cursor.y, this.cursor.x, this.cursor.x);
         }
 
         // stepping
         this.cursor.x++;
+        this.postCursor();
     },
     
     ev_specialChar: function (key) {
         switch (key) {
             case 'carriageReturn':
                 this.cursor.x = 0;
+                this.postCursor();
                 break;
 
             case 'backspace':
                 this.cursor.x--;
                 if ( this.cursor.x < 0 )
                     this.cursor.x = 0;
+                this.postCursor();
                 break;
 
             case 'lineFeed':
@@ -364,12 +376,14 @@ emu.prototype = {
                 }
                 if ( this.mode.newLineMode == 'crlf' )
                     this.cursor.x = 0;
+                this.postCursor();
                 break;
 
             case 'horizontalTab':
                 do {
                     this.cursor.x++;
                 } while ( this.cursor.x < this.width && !this.tabs[this.cursor.x] );
+                this.postCursor();
                 break;
 
             case 'bell':
@@ -389,24 +403,28 @@ emu.prototype = {
                 this.cursor.y -= count;
                 if ( this.cursor.y < t )
                     this.cursor.y = t;
+                this.postCursor();
                 break;
 
             case 'down':
                 this.cursor.y += count;
                 if ( this.cursor.y >= b )
                     this.cursor.y = b-1;
+                this.postCursor();
                 break;
 
             case 'left':
                 this.cursor.x -= count;
                 if ( this.cursor.x < 0 )
                     this.cursor.x = 0;
+                this.postCursor();
                 break;
 
             case 'right':
                 this.cursor.x += count;
                 if ( this.cursor.x >= this.width )
                     this.cursor.x = this.width-1;
+                this.postCursor();
                 break;
 
             default:
@@ -433,6 +451,7 @@ emu.prototype = {
             this.scr.c.bcolor.splice(rmidx, 1);
             this.scr.c.bcolor.splice(insidx, 0, 0);
         }
+        this.postChange(this.cursor.y, this.cursor.x, this.width-1);
     },
 
     ev_deleteLines: function (count) {
@@ -463,6 +482,9 @@ emu.prototype = {
                 });
             this.scr.lineAttr.splice(this.cursor.y, 1);
         }
+
+        for (var y = this.cursor.y; y <= this.margins.bottom; y++)
+            this.postChange(y, 0, this.width-1);
     },
 
     ev_insertLines: function (count) {
@@ -485,11 +507,14 @@ emu.prototype = {
                 }
 
             for (var x = 0; x < this.width; x++)
-                this.putChar('set', x, this.cursor.y, ' ', false, false, false, false, 7, 0);
+                this.putChar('set', x, this.cursor.y, ' ', false, false, true, false, 7, 0);
 
             this.scr.lineAttr.splice(this.margins.bottom, 1);
             this.scr.lineAttr.splice(this.cursor.y, 0, { width: 'normal', height: 'normal' });
         }
+
+        for (var y = this.cursor.y; y <= this.margins.bottom; y++)
+            this.postChange(y, 0, this.width-1);
     },
 
     ev_index: function (how) {
@@ -499,6 +524,7 @@ emu.prototype = {
                     this.scroll(1);
                 } else {
                     this.cursor.y++;
+                    this.postCursor();
                 }
                 break;
 
@@ -507,12 +533,14 @@ emu.prototype = {
                     this.scroll(-1);
                 } else {
                     this.cursor.y--;
+                    this.postCursor();
                 }
                 break;
 
             case 'nextLine':
                 this.ev_index('down');
                 this.cursor.x = 0;
+                this.postCursor();
                 break;
 
             default:
@@ -546,6 +574,8 @@ emu.prototype = {
                     this.newscralt = newscralt;
                     this.mode.currentScreen = value;
                 }
+                for (var y = 0; y < this.height; y++)
+                    this.postChange(y, 0, this.width-1);
                 break;
 
             default:
@@ -557,17 +587,20 @@ emu.prototype = {
         switch (how) {
             case 'toEnd':
                 for (var x = this.cursor.x; x < this.width; x++)
-                    this.putChar('set', x, this.cursor.y, ' ', false, false, false, false, 7, 0);
+                    this.putChar('set', x, this.cursor.y, ' ', false, false, true, false, 7, 0);
+                this.postChange(this.cursor.y, this.cursor.x, this.width-1);
                 break;
 
             case 'toStart':
                 for (var x = this.cursor.x; x >= 0; x--)
-                    this.putChar('set', x, this.cursor.y, ' ', false, false, false, false, 7, 0);
+                    this.putChar('set', x, this.cursor.y, ' ', false, false, true, false, 7, 0);
+                this.postChange(this.cursor.y, 0, this.cursor.x);
                 break;
 
             case 'whole':
                 for (var x = 0; x < this.width; x++)
-                    this.putChar('set', x, this.cursor.y, ' ', false, false, false, false, 7, 0);
+                    this.putChar('set', x, this.cursor.y, ' ', false, false, true, false, 7, 0);
+                this.postChange(this.cursor.y, 0, this.width-1);
                 break;
 
             default:
@@ -581,26 +614,32 @@ emu.prototype = {
                 this.ev_eraseInLine('toEnd');
                 for (var y = this.cursor.y+1; y < this.height; y++) {
                     for (var x = 0; x < this.width; x++)
-                        this.putChar('set', x, y, ' ', false, false, false, false, 7, 0);
+                        this.putChar('set', x, y, ' ', false, false, true, false, 7, 0);
                     this.scr.lineAttr.splice(y, 1, { width: 'normal', height: 'normal' });
                 }
+                for (var y = this.cursor.y+1; y < this.height; y++)
+                    this.postChange(y, 0, this.width-1);
                 break;
 
             case 'toStart':
                 this.ev_eraseInLine('toStart');
                 for (var y = this.cursor.y-1; y >= 0; y--) {
                     for (var x = 0; x < this.width; x++)
-                        this.putChar('set', x, y, ' ', false, false, false, false, 7, 0);
+                        this.putChar('set', x, y, ' ', false, false, true, false, 7, 0);
                     this.scr.lineAttr.splice(y, 1, { width: 'normal', height: 'normal' });
                 }
+                for (var y = this.cursor.y-1; y >= 0; y--)
+                    this.postChange(y, 0, this.width-1);
                 break;
 
             case 'whole':
                 for (var y = 0; y < this.height; y++) {
                     for (var x = 0; x < this.width; x++)
-                        this.putChar('set', x, y, ' ', false, false, false, false, 7, 0);
+                        this.putChar('set', x, y, ' ', false, false, true, false, 7, 0);
                     this.scr.lineAttr.splice(y, 1, { width: 'normal', height: 'normal' });
                 }
+                for (var y = 0; y < this.height; y++)
+                    this.postChange(y, 0, this.width-1);
                 break;
 
             default:
@@ -632,6 +671,8 @@ emu.prototype = {
 
         this.cursor.x = x;
         this.cursor.y = y;
+
+        this.postCursor();
     },
 
     ev_report: function (type) {
@@ -707,13 +748,16 @@ emu.prototype = {
                 this.scr.c.text.splice(insidx, 0, ' ');
                 this.scr.c.bold.splice(insidx, 0, false);
                 this.scr.c.underline.splice(insidx, 0, false);
-                this.scr.c.lowintensity.splice(insidx, 0, false);
+                this.scr.c.lowintensity.splice(insidx, 0, true);
                 this.scr.c.blink.splice(insidx, 0, false);
                 this.scr.c.fcolor.splice(insidx, 0, 7);
                 this.scr.c.bcolor.splice(insidx, 0, 0);
             }
             this.scr.lineAttr.splice(insidxline, 0, { width: 'normal', height: 'normal' });
         }
+
+        for (var y = this.margins.top; y <= this.margins.bottom; y++)
+            this.postChange(y, 0, this.width-1);
     },
 
     handleEventDirect: function () {
