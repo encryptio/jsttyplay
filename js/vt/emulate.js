@@ -216,6 +216,8 @@ emu.prototype = {
 
         this.margins.top = top;
         this.margins.bottom = bottom;
+
+        this.ev_goto('home');
     },
 
     ev_cursorStack: function (action) {
@@ -554,6 +556,7 @@ emu.prototype = {
 
     ev_originMode: function (mode) {
         this.mode.originMode = mode;
+        this.ev_goto('home');
     },
 
     ev_mode: function (key, value) {
@@ -563,6 +566,8 @@ emu.prototype = {
             case 'keypad':
             case 'mouseTrackingUp':
             case 'mouseTrackingDown':
+            case 'autoWrap':
+            case 'scroll':
                 this.mode[key] = value;
                 var modeset = {};
                 modeset[key] = value;

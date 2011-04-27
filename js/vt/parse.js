@@ -30,7 +30,6 @@ return function (term_cb, warn) {
 
             case '?6':
                 term_cb('originMode', 'margin');
-                term_cb('goto', 'home');
                 break;
 
             case '?7':
@@ -98,7 +97,6 @@ return function (term_cb, warn) {
 
             case '?6':
                 term_cb('originMode', 'screen');
-                term_cb('goto', 'home');
                 break;
 
             case '?7':
@@ -333,11 +331,15 @@ return function (term_cb, warn) {
         }],
 
         // mode set/reset
-        [/^\033\[([^\033]*?)h/, function (m) {
-            m[1].split(';').forEach(setMode);
+        [/^\033\[(\??)([^\033]*?)h/, function (m) {
+            m[2].split(';').forEach(function (sub) {
+                    setMode(m[1] + sub);
+                });
         }],
-        [/^\033\[([^\033]*?)l/, function (m) {
-            m[1].split(';').forEach(resetMode);
+        [/^\033\[(\??)([^\033]*?)l/, function (m) {
+            m[2].split(';').forEach(function (sub) {
+                    resetMode(m[1] + sub);
+                });
         }],
 
         // horizontal tab stops
@@ -428,11 +430,9 @@ return function (term_cb, warn) {
         // margins
         [/^\033\[([0-9]+);([0-9]+)r/, function (m) {
             term_cb('setMargins', parseInt(m[1], 10), parseInt(m[2], 10));
-            //term_cb('goto', 'home');
         }],
         [/^\033\[r/, function (m) {
             term_cb('resetMargins');
-            //term_cb('goto', 'home');
         }],
 
         // reset
