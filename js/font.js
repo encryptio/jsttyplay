@@ -1,12 +1,21 @@
 // TODO: look into using drawRect for backgrounds, to only need a colorMap for every foreground color
 var FontRenderer = (function(){
+    /*
+     * "chunks" of a font are used to allow lazy color mapping without remapping the entire font
+     * a chunk is f.chunkWidth characters long, a contiguous section of indexes
+     * to get a chunk id from an index:
+     *     cid = Math.floor(index/f.chunkWidth);
+     * and the offset inside the chunk:
+     *     offset = index-cid*f.chunkWidth;
+     */
+
     var fonts = {
         /*
          * name: {
          *     'image': Image(),
          *     'loaded': true,
          *     'colorMaps': {
-         *         "$fg/$bg": HTMLCanvasElement,
+         *         "$fg/$bg/chunk": HTMLCanvasElement,
          *         ...
          *     },
          *     'loadedCallback': function () { ... }, # goes away after loaded
@@ -87,7 +96,10 @@ var FontRenderer = (function(){
                 }
             }
 
-            ctx.drawImage(FontRenderer.getFontColorMap(font, fg, bg), idx*f.charWidth, 0, f.charWidth, f.charHeight, x, y, f.charWidth, f.charHeight);
+            var chunk = Math.floor(idx/f.chunkWidth);
+            var offset = idx - chunk*f.chunkWidth;
+
+            ctx.drawImage(FontRenderer.getFontColorMap(font, fg, bg, chunk), offset*f.charWidth, 0, f.charWidth, f.charHeight, x, y, f.charWidth, f.charHeight);
         },
 
         drawString: function (ctx, font, str, x, y, fg, bg) {
@@ -112,22 +124,26 @@ var FontRenderer = (function(){
         ////////////////////////////////////////////////////////////////////////////////
         // Private
 
-        getFontColorMap: function (name, fg, bg) {
-            var mapstr = fg + "/" + bg;
+        getFontColorMap: function (name, fg, bg, chunk) {
+            var mapstr = fg + "/" + bg + "/" + chunk;
             if ( fonts[name].colorMaps[mapstr] )
                 return fonts[name].colorMaps[mapstr];
 
             var f = fonts[name];
 
-            var w = f.image.naturalWidth;
+            var w = f.charWidth * f.chunkWidth;
             var h = f.image.naturalHeight;
+
+            var xoff = chunk * w;
+            if ( xoff + w > f.image.naturalWidth )
+                w = f.image.naturalWidth - xoff;
 
             var cv = document.createElement('canvas');
             cv.setAttribute('width',  w);
             cv.setAttribute('height', h);
 
             var ctx = cv.getContext('2d');
-            ctx.drawImage(f.image, 0, 0);
+            ctx.drawImage(f.image, xoff, 0, w, h, 0, 0, w, h);
 
             var input  = ctx.getImageData(0, 0, w, h);
             var output = ctx.createImageData(w, h);
@@ -220,6 +236,8 @@ var FontRenderer = (function(){
             delete f.loadedChars;
             delete f.loadedCallback;
             delete f.charsXHR;
+
+            f.chunkWidth = Math.ceil(8192 / (f.charWidth * f.charHeight));
 
             cb();
         },
