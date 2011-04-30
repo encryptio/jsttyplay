@@ -1,5 +1,4 @@
-function get_binary_data(url) {
-
+function get_binary_data_sync(url) {
     var r = new XMLHttpRequest();
     r.open("GET", url, false);
     r.overrideMimeType("text/plain; charset=x-user-defined"); // thx Marcus Granado, 2006 @ mgran.blogspot.com
@@ -11,6 +10,22 @@ function get_binary_data(url) {
     }
 
     return r.responseText;
+}
+
+function get_binary_data_async(url, cb) {
+    var r = new XMLHttpRequest();
+    r.open("GET", url, true);
+    r.overrideMimeType("text/plain; charset=x-user-defined"); // thx Marcus Granado, 2006 @ mgran.blogspot.com
+    r.onreadystatechange = function () {
+            if ( r.readyState == 4 ) {
+                if ( r.status != 200 ) {
+                    cb(null, r.statusText);
+                } else {
+                    cb(r.responseText, null);
+                }
+            }
+        };
+    r.send(null);
 }
 
 function r_uint8(data, offset) {
