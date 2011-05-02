@@ -40,7 +40,15 @@ var VTCanvasView = (function(){
                         if ( x >= s.emu.width ) x = s.emu.width - 1;
                         s.cursor.cur.x = x;
                         s.cursor.cur.y = y;
-                    }
+                    },
+                special: function (obj) {
+                        if ( obj.thaw ) {
+                            for (var y = 0; y < s.emu.height; y++)
+                                s.makeSpanDirty(y, 0, s.emu.width-1);
+                            s.cursor.cur.x = s.emu.cursor.x;
+                            s.cursor.cur.y = s.emu.cursor.y;
+                        }
+                    },
             });
 
         s.parser = new VTParser(function () {
@@ -59,6 +67,18 @@ var VTCanvasView = (function(){
             });
     };
 })();
+
+VTCanvasView.prototype.freeze = function () {
+    return {
+        emulator: this.emu.freeze(),
+        parser: this.parser.freeze()
+    };
+};
+
+VTCanvasView.prototype.thaw = function (obj) {
+    this.emu.thaw(obj.emulator);
+    this.parser.thaw(obj.parser);
+};
 
 VTCanvasView.prototype.parseData = function (data) {
     this.parser.parse(data);

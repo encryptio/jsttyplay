@@ -9,6 +9,28 @@ function unpack_unicode(hex) {
     return String.fromCharCode(parseInt(hex, 16));
 }
 
+function cloneObject(input, out) {
+    for (var k in out)
+        delete out[k];
+    for (var k in input)
+        out[k] = input[k];
+}
+
+function cloneArray(input, out) {
+    out.splice(0, out.length);
+    for (var i in input)
+        out.push(input[i]);
+}
+
+function cloneArrayOfObjects(input, out) {
+    out.splice(0, out.length);
+    for (var i in input) {
+        out[i] = { };
+        for (var k in input[i])
+            out[i][k] = input[i][k];
+    }
+}
+
 var emu = function (opts) {
     if ( opts.change )
         this.changeCallback = opts.change;
@@ -123,6 +145,91 @@ emu.prototype = {
         this.charsets.g0 = 'us';
         this.charsets.g1 = 'line';
         this.charsets.active = 'g0';
+    },
+
+    freeze: function () {
+        var ret = { scr: { lineAttr: [] }, scralt: { lineAttr: [] } };
+        cloneArrayOfObjects(this.scr.lineAttr, ret.scr.lineAttr);
+        cloneArrayOfObjects(this.scralt.lineAttr, ret.scralt.lineAttr);
+
+        ret.scr.c = { text: [], bold: [], underline: [], lowintensity: [], blink: [], fcolor: [], bcolor: [] };
+        cloneArray(this.scr.c.text, ret.scr.c.text);
+        cloneArray(this.scr.c.bold, ret.scr.c.bold);
+        cloneArray(this.scr.c.underline, ret.scr.c.underline);
+        cloneArray(this.scr.c.lowintensity, ret.scr.c.lowintensity);
+        cloneArray(this.scr.c.blink, ret.scr.c.blink);
+        cloneArray(this.scr.c.fcolor, ret.scr.c.fcolor);
+        cloneArray(this.scr.c.bcolor, ret.scr.c.bcolor);
+
+        ret.scralt.c = { text: [], bold: [], underline: [], lowintensity: [], blink: [], fcolor: [], bcolor: [] };
+        cloneArray(this.scralt.c.text, ret.scralt.c.text);
+        cloneArray(this.scralt.c.bold, ret.scralt.c.bold);
+        cloneArray(this.scralt.c.underline, ret.scralt.c.underline);
+        cloneArray(this.scralt.c.lowintensity, ret.scralt.c.lowintensity);
+        cloneArray(this.scralt.c.blink, ret.scralt.c.blink);
+        cloneArray(this.scralt.c.fcolor, ret.scralt.c.fcolor);
+        cloneArray(this.scralt.c.bcolor, ret.scralt.c.bcolor);
+
+        ret.mode = { };
+        cloneObject(this.mode, ret.mode);
+
+        ret.cursor = { };
+        cloneObject(this.cursor, ret.cursor);
+
+        ret.cursorStack = [];
+        cloneArrayOfObjects(this.cursorStack, ret.cursorStack);
+
+        ret.margins = { };
+        cloneObject(this.margins, ret.margins);
+
+        ret.tabs = { };
+        cloneObject(this.tabs, ret.tabs);
+
+        ret.windowTitle = this.windowTitle;
+        ret.iconTitle = this.iconTitle;
+
+        ret.charsets = { };
+        cloneObject(this.charsets, ret.charsets);
+
+        return ret;
+    },
+
+    thaw: function (obj) {
+        cloneArrayOfObjects(obj.scr.lineAttr, this.scr.lineAttr);
+        cloneArrayOfObjects(obj.scralt.lineAttr, this.scralt.lineAttr);
+
+        cloneArray(obj.scr.c.text, this.scr.c.text);
+        cloneArray(obj.scr.c.bold, this.scr.c.bold);
+        cloneArray(obj.scr.c.underline, this.scr.c.underline);
+        cloneArray(obj.scr.c.lowintensity, this.scr.c.lowintensity);
+        cloneArray(obj.scr.c.blink, this.scr.c.blink);
+        cloneArray(obj.scr.c.fcolor, this.scr.c.fcolor);
+        cloneArray(obj.scr.c.bcolor, this.scr.c.bcolor);
+
+        cloneArray(obj.scralt.c.text, this.scralt.c.text);
+        cloneArray(obj.scralt.c.bold, this.scralt.c.bold);
+        cloneArray(obj.scralt.c.underline, this.scralt.c.underline);
+        cloneArray(obj.scralt.c.lowintensity, this.scralt.c.lowintensity);
+        cloneArray(obj.scralt.c.blink, this.scralt.c.blink);
+        cloneArray(obj.scralt.c.fcolor, this.scralt.c.fcolor);
+        cloneArray(obj.scralt.c.bcolor, this.scralt.c.bcolor);
+
+        cloneObject(obj.mode, this.mode);
+
+        cloneObject(obj.cursor, this.cursor);
+
+        cloneArrayOfObjects(obj.cursorStack, this.cursorStack);
+
+        cloneObject(obj.margins, this.margins);
+
+        cloneObject(obj.tabs, this.tabs);
+
+        this.windowTitle = obj.windowTitle;
+        this.iconTitle   = obj.iconTitle;
+
+        cloneObject(obj.charsets, this.charsets);
+
+        this.postSpecial({ 'thaw': 'thaw' });
     },
 
     charmap: {
