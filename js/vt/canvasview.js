@@ -43,7 +43,7 @@ var VTCanvasView = (function(){
                     }
             });
 
-        s.parser = VTParser(function () {
+        s.parser = new VTParser(function () {
                 s.emu.handleEvent(Array.prototype.slice.call(arguments));
             });
 
@@ -61,7 +61,7 @@ var VTCanvasView = (function(){
 })();
 
 VTCanvasView.prototype.parseData = function (data) {
-    this.parser(data);
+    this.parser.parse(data);
 };
 
 VTCanvasView.prototype.makeSpanDirty = function (y, minx, maxx) {
