@@ -500,7 +500,7 @@ emu.prototype = {
                 break;
 
             case 'bell':
-                this.postSpecial('bell');
+                this.postSpecial({ 'bell': 'bell' });
                 break;
 
             default:
