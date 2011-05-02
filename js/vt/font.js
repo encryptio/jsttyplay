@@ -1,5 +1,7 @@
 // TODO: look into using drawRect for backgrounds, to only need a colorMap for every foreground color
 var VTFont = (function(){
+    var missingCode = "?".charCodeAt(0);
+
     ////////////////////////////////////////////////////////////////////////////////
     // Font loader
 
@@ -105,10 +107,6 @@ var VTFont = (function(){
             var idx;
             if ( typeof(this.chars[codepoint]) != 'undefined' ) {
                 idx = this.chars[codepoint];
-            } else if ( typeof(substitutes[codepoint]) != 'undefined' ) {
-                if ( typeof(this.chars[substitutes[codepoint]]) != 'undefined' ) {
-                    idx = this.chars[substitutes[codepoint]];
-                }
             }
 
             if ( typeof idx == 'undefined' ) {
