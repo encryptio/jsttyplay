@@ -80,24 +80,35 @@ var VTFont = (function(){
         var chars = this.chars = { };
         this.colorMaps = { };
 
-        var i = 0;
+        var x = 0;
+        var y = 0;
+        var count = 0;
+        var charsPerRow = 0;
         stats.split("\n").forEach(function(v){
                 if ( v.length ) {
-                    if ( ! /^\d+$/.exec(v) ) {
+                    if ( /^\d+$/.exec(v) ) {
+                        chars[v] = [x++, y];
+                        count++;
+                    } else if ( /^nextrow$/.exec(v) ) {
+                        if ( x > charsPerRow )
+                            charsPerRow = x;
+                        x = 0;
+                        y++;
+                    } else {
                         throw "Stats file is corrupt, line=\""+v+"\"";
                     }
-                    chars[v] = i++;
                 }
             });
 
-        this.charCount = i;
+        if ( x > charsPerRow )
+            charsPerRow = x;
 
-        this.charHeight = this.image.naturalHeight;
-        this.charWidth = this.image.naturalWidth / this.charCount;
+        this.charCount = count;
+
+        this.charHeight = this.image.naturalHeight / (y+1);
+        this.charWidth = this.image.naturalWidth / charsPerRow;
         if ( this.charWidth != Math.floor(this.charWidth) )
             throw "font loading of \""+name+"\" failed: image width is not a multiple of the character count (image width = " + this.image.naturalWidth + ", character count = " + this.charCount + ")";
-
-        this.chunkWidth = Math.ceil(8192 / (this.charWidth * this.charHeight));
     };
 
     Font.prototype = {
@@ -117,10 +128,7 @@ var VTFont = (function(){
                 }
             }
 
-            var chunk = Math.floor(idx/this.chunkWidth);
-            var offset = idx - chunk*this.chunkWidth;
-
-            ctx.drawImage(this.getFontColorMap(fg, bg, chunk), offset*this.charWidth, 0, this.charWidth, this.charHeight, x, y, this.charWidth, this.charHeight);
+            ctx.drawImage(this.getFontColorMap(fg, bg, idx[1]), idx[0]*this.charWidth, 0, this.charWidth, this.charHeight, x, y, this.charWidth, this.charHeight);
         },
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -131,19 +139,17 @@ var VTFont = (function(){
             if ( this.colorMaps[mapstr] )
                 return this.colorMaps[mapstr];
 
-            var w = this.charWidth * this.chunkWidth;
-            var h = this.image.naturalHeight;
+            var w = this.image.naturalWidth;
+            var h = this.charHeight;
 
-            var xoff = chunk * w;
-            if ( xoff + w > this.image.naturalWidth )
-                w = this.image.naturalWidth - xoff;
+            var yoff = chunk * this.charHeight;
 
             var cv = document.createElement('canvas');
             cv.setAttribute('width',  w);
             cv.setAttribute('height', h);
 
             var ctx = cv.getContext('2d');
-            ctx.drawImage(this.image, xoff, 0, w, h, 0, 0, w, h);
+            ctx.drawImage(this.image, 0, yoff, w, h, 0, 0, w, h);
 
             var input  = ctx.getImageData(0, 0, w, h);
             var output = ctx.createImageData(w, h);

@@ -53,10 +53,8 @@ sub parse_char {
 
     tr/[., ]/0/, tr/[1X@MOSW]/1/ for @lines;
 
-    @lines = map [split //, $_], @lines;
-
     ($_ ne '1' and $_ ne '0') and die "Bad character value '$_' for \"$header\" (line $line)"
-        for map @$_, @lines;
+        for map split(//, $_), @lines;
 
     $font_map{$unicode_value} = \@lines;
 }
@@ -85,28 +83,57 @@ print STDERR "Font size: ${font_width}x${font_height}\n";
 
 my @codepoints = sort { $a <=> $b } keys %font_map;
 
-print STDERR "Writing image...\n";
-open my $sf, "|-", "convert", "pbm:-", "png:$outimage" or die;
-print $sf "P4 ".($font_width * @codepoints)." $font_height ";
-for my $line ( 0 .. $font_height-1 ) {
-    my $bits = '';
-    for my $ch ( @codepoints ) {
-        $bits .= join '', @{ $font_map{$ch}[$line] };
-        if ( length $bits > 512 ) {
-            my $kb = substr $bits, 0, 512, '';
-            print $sf pack "B*", $kb;
+my $width = int sqrt int scalar @codepoints;
+$width = 8 if $width < 8;
+
+print STDERR "Building image and stats...\n";
+open my $sf, ">", $outstats or die;
+
+my $this_ch_x = 0;
+my $this_ch_y = 0;
+my $image_data = '';
+my @row_bits = map +("0" x ($width*$font_width)), 1..$font_height;
+for my $idx ( 0 .. $#codepoints ) {
+    my $cp = $codepoints[$idx];
+
+    # flush this row to the pbm buffer if neccessary
+    if ( $this_ch_x == $width ) {
+        $this_ch_y++;
+        $this_ch_x = 0;
+        for my $row ( @row_bits ) {
+            $row .= "0" while length($row) % 8 != 0;
+            $image_data .= pack "B*", $row;
+            $row = "0" x ($width*$font_width);
         }
+        print "image data length: ".length($image_data)."\n";
+        print $sf "nextrow\n";
     }
-    $bits .= "0" while length($bits) % 8 != 0;
-    print $sf pack "B*", $bits;
+
+
+    # add the character to this image row
+    print $sf "$cp\n";
+
+    for my $row ( 0 .. $font_height-1 ) {
+        substr($row_bits[$row], $this_ch_x*$font_width, $font_width, $font_map{$cp}[$row]);
+    }
+
+    $this_ch_x++;
 }
+
+if ( $this_ch_x ) {
+    # we have put a character on the last line
+    for my $row ( @row_bits ) {
+        $row .= "0" while length($row) % 8 != 0;
+        $image_data .= pack "B*", $row;
+    }
+}
+
 close $sf;
 
-print STDERR "Writing stats...\n";
-open $sf, ">", $outstats or die;
-for my $cp ( @codepoints ) {
-    print $sf "$cp\n";
-}
+print STDERR "Converting image to png...\n";
+
+open $sf, "|-", "convert", "pbm:-", "png:$outimage" or die;
+print $sf "P4 ".($font_width * $width)." ".(($this_ch_y+1) * $font_height)." ".$image_data;
 close $sf;
 
 print STDERR "Done.\n";
