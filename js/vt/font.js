@@ -84,16 +84,26 @@ var VTFont = (function(){
         var y = 0;
         var count = 0;
         var charsPerRow = 0;
+        var last_cp = 0;
         stats.split("\n").forEach(function(v){
                 if ( v.length ) {
+                    var res;
                     if ( /^\d+$/.exec(v) ) {
                         chars[v] = [x++, y];
+                        last_cp = parseInt(v, 10);
                         count++;
-                    } else if ( /^nextrow$/.exec(v) ) {
+                    } else if ( /^y$/.exec(v) ) {
                         if ( x > charsPerRow )
                             charsPerRow = x;
                         x = 0;
                         y++;
+                    } else if ( res = /^r(\d+)$/.exec(v) ) {
+                        var ct = parseInt(res[1], 10);
+                        for (var v2 = last_cp+1; v2 <= last_cp+ct; v2++) {
+                            chars[v2] = [x++, y];
+                        }
+                        count   += ct;
+                        last_cp += ct;
                     } else {
                         throw "Stats file is corrupt, line=\""+v+"\"";
                     }

@@ -93,6 +93,14 @@ my $this_ch_x = 0;
 my $this_ch_y = 0;
 my $image_data = '';
 my @row_bits = map +("0" x ($width*$font_width)), 1..$font_height;
+my $last_cp = 0;
+my $cp_run = 0;
+sub flush_run {
+    if ( $cp_run ) {
+        print $sf "r$cp_run\n";
+        $cp_run = 0;
+    }
+}
 for my $idx ( 0 .. $#codepoints ) {
     my $cp = $codepoints[$idx];
 
@@ -106,12 +114,20 @@ for my $idx ( 0 .. $#codepoints ) {
             $row = "0" x ($width*$font_width);
         }
         print "image data length: ".length($image_data)."\n";
-        print $sf "nextrow\n";
+        flush_run();
+        print $sf "y\n";
     }
 
 
     # add the character to this image row
-    print $sf "$cp\n";
+    if ( $last_cp + 1 == $cp ) {
+        $cp_run++;
+        $last_cp = $cp;
+    } else {
+        flush_run();
+        print $sf "$cp\n";
+        $last_cp = $cp;
+    }
 
     for my $row ( 0 .. $font_height-1 ) {
         substr($row_bits[$row], $this_ch_x*$font_width, $font_width, $font_map{$cp}[$row]);
@@ -119,6 +135,8 @@ for my $idx ( 0 .. $#codepoints ) {
 
     $this_ch_x++;
 }
+
+flush_run();
 
 if ( $this_ch_x ) {
     # we have put a character on the last line
