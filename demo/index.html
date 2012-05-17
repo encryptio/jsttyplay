@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="../pack/jsttyplay-all.js"></script>
+  <style>
+    body { background:#000; }
+    canvas { margin: 0 auto; }
+  </style>
+</head>
+
+
+<body>
+
+  <canvas id="term_canvas" width="80" height="24"></canvas>
+
+  <script>
+    window.term_playback = new DummyTerminal(document.getElementById('term_canvas'), './ttycap.txt', {font_name: 'fixed-9x15'});
+    term_playback.run();
+  </script>
+
+
+</body>
+
+</html>
